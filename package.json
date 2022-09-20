@@ -10,14 +10,24 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:helloworld.helloWorld"
+    "onCommand:helloworld.helloWorld",
+    "onCommand:helloworld.helloBitch",
+    "onCommand:helloworld.openFileDialog"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "helloworld.helloWorld",
-        "title": "Hello World"
+        "title": "Hello: Hello Kuku!"
+      },
+      {
+        "command": "helloworld.helloBitch",
+        "title": "Hello: Hello Bitch!"
+      },
+      {
+        "command": "helloworld.openFileDialog",
+        "title": "Hello: Select File"
       }
     ]
   },

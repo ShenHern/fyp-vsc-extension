@@ -16,10 +16,34 @@ export function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand('helloworld.helloWorld', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from HelloWorld!');
+		vscode.window.showInformationMessage('Hello World from VSCode kuku!');
 	});
 
+	let disposable2 = vscode.commands.registerCommand('helloworld.helloBitch', () => {
+		// The code you place here will be executed every time your command is executed
+		// Display a message box to the user
+		vscode.window.showWarningMessage('Sup\' Bitch!');
+	});
+
+	let disposable3 = vscode.commands.registerCommand('helloworld.openFileDialog', () => {
+		// The code you place here will be executed every time your command is executed
+		// open a file dialog box
+		let od: vscode.OpenDialogOptions = {canSelectFiles: true, canSelectFolders: false, defaultUri: vscode.Uri.file('/')};
+		let p1 = vscode.window.showOpenDialog(od);
+		p1.then(
+			(result) => {
+				console.log(result);
+				if (result !== undefined) {
+					vscode.window.showInformationMessage(result[0].path);
+				}
+			});
+		// vscode.window.showInformationMessage(myuri.path);
+	});
+	
+
+	
 	context.subscriptions.push(disposable);
+	context.subscriptions.push(disposable2);
 }
 
 // this method is called when your extension is deactivated
