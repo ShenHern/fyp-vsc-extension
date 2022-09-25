@@ -28,7 +28,12 @@ export function activate(context: vscode.ExtensionContext) {
 	let disposable3 = vscode.commands.registerCommand('helloworld.openFileDialog', () => {
 		// The code you place here will be executed every time your command is executed
 		// open a file dialog box
-		let od: vscode.OpenDialogOptions = {canSelectFiles: true, canSelectFolders: false, defaultUri: vscode.Uri.file('/')};
+		let ws = vscode.workspace.workspaceFolders;
+		let rootPathStr = ".";
+		if (ws) {
+			rootPathStr = ws[0].toString();
+		}
+		let od: vscode.OpenDialogOptions = {canSelectFiles: true, canSelectFolders: false, defaultUri: vscode.Uri.file(rootPathStr)};
 		let p1 = vscode.window.showOpenDialog(od);
 		p1.then(
 			(result) => {
