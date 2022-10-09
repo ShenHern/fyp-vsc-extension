@@ -1,6 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import fs = require('fs');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -16,13 +17,13 @@ export function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand('helloworld.helloWorld', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from VSCode kuku!');
+		vscode.window.showInformationMessage('Hello World from VSCode!');
 	});
 
 	let disposable2 = vscode.commands.registerCommand('helloworld.helloBitch', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		vscode.window.showWarningMessage('Sup\' Bitch!');
+		vscode.window.showWarningMessage('Hello World 2!');
 	});
 
 	let disposable3 = vscode.commands.registerCommand('helloworld.openFileDialog', () => {
@@ -33,22 +34,32 @@ export function activate(context: vscode.ExtensionContext) {
 		if (ws) {
 			rootPathStr = ws[0].toString();
 		}
-		let od: vscode.OpenDialogOptions = {canSelectFiles: true, canSelectFolders: false, defaultUri: vscode.Uri.file(rootPathStr)};
+		let od: vscode.OpenDialogOptions = {canSelectFiles: true, canSelectFolders: false, defaultUri: vscode.Uri.file(rootPathStr), filters: {"json" : ["json"]}};
 		let p1 = vscode.window.showOpenDialog(od);
 		p1.then(
 			(result) => {
 				console.log(result);
 				if (result !== undefined) {
 					vscode.window.showInformationMessage(result[0].path);
+					let tracePath = result[0].path;
+					tracePath = tracePath.substring(1);	// remove first slash from path provided by vscode API
+					let rawData = fs.readFileSync(tracePath);
+					let traceObj = JSON.parse(rawData.toString());
+					console.log(traceObj.events);
+					for (let i = 0; i < traceObj.events.length; i++) {
+						for (let j = 0; j < traceObj.events[i].events.length; j++) {
+							console.log(traceObj.events[i].events[j]);
+						}
+					}
 				}
 			});
-		// vscode.window.showInformationMessage(myuri.path);
 	});
 	
 
 	
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(disposable2);
+	context.subscriptions.push(disposable3);
 }
 
 // this method is called when your extension is deactivated
