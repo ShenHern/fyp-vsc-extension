@@ -2,11 +2,13 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import fs = require('fs');
+import { splitComponents } from './functions';
+import { exit } from 'process';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-	
+
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "helloworld" is now active!');
@@ -20,7 +22,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('Hello World from VSCode!');
 	});
 
-	let disposable2 = vscode.commands.registerCommand('helloworld.helloBitch', () => {
+	let disposable2 = vscode.commands.registerCommand('helloworld.helloWorld2', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
 		vscode.window.showWarningMessage('Hello World 2!');
@@ -34,7 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (ws) {
 			rootPathStr = ws[0].toString();
 		}
-		let od: vscode.OpenDialogOptions = {canSelectFiles: true, canSelectFolders: false, defaultUri: vscode.Uri.file(rootPathStr), filters: {"json" : ["json"]}};
+		let od: vscode.OpenDialogOptions = { canSelectFiles: true, canSelectFolders: false, defaultUri: vscode.Uri.file(rootPathStr), filters: { "json": ["json"] } };
 		let p1 = vscode.window.showOpenDialog(od);
 		p1.then(
 			(result) => {
@@ -45,22 +47,28 @@ export function activate(context: vscode.ExtensionContext) {
 					tracePath = tracePath.substring(1);	// remove first slash from path provided by vscode API
 					let rawData = fs.readFileSync(tracePath);
 					let traceObj = JSON.parse(rawData.toString());
-					console.log(traceObj.events);
+					// console.log(traceObj.events);
 					for (let i = 0; i < traceObj.events.length; i++) {
 						for (let j = 0; j < traceObj.events[i].events.length; j++) {
-							console.log(traceObj.events[i].events[j]);
+							// console.log(traceObj.events[i].events[j]);
+							// console.log(splitComponents(traceObj.events[i].events[j]["component"]));
+							let componentArr = splitComponents(traceObj.events[i].events[j]["component"]);
+
+							console.log(`component name: ${componentArr[0]}
+component clazz: ${componentArr[1]} 
+component node: ${componentArr[2]}`);
 						}
 					}
 				}
 			});
 	});
-	
 
-	
+
+
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(disposable2);
 	context.subscriptions.push(disposable3);
 }
 
 // this method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { }
