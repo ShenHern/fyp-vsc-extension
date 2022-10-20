@@ -3,7 +3,7 @@
  * @param s the component string
  * @returns an array containing split component parts
  */
-export function splitComponents(s: string) {
+function splitComponents(s: string) {
     const regexName = /\w.*(?=::)/;
     const regexClazz = /[^\.]*(?=\/)/;
     const regexNode = /[^\/]*$/;
@@ -33,7 +33,7 @@ export function splitComponents(s: string) {
  * @param eventRow an event at a particular row in trace.json
  * @returns the index of the trace the event belongs to; otherwise undefined
  */
-export function findTrace(cache: { [id: string]: number; }, eventRow: { [x: string]: any; }) {
+function findTrace(cache: { [id: string]: number; }, eventRow: { [x: string]: any; }) {
     if ("threadID" in eventRow) {
         let id: string = eventRow["threadID"];
         if (id in cache) {
@@ -55,7 +55,7 @@ export function findTrace(cache: { [id: string]: number; }, eventRow: { [x: stri
  * @param eventRow an event at a particular row in trace.json
  * @param traceID the index of the trace that the event belongs to
  */
-export function addToCache(cache: { [id: string]: number; }, eventRow: { [x: string]: any; }, traceID: number) {
+function addToCache(cache: { [id: string]: number; }, eventRow: { [x: string]: any; }, traceID: number) {
     if ("threadID" in eventRow) {
         let id: string = eventRow["threadID"];
         cache[id] = traceID;
@@ -70,3 +70,54 @@ export function addToCache(cache: { [id: string]: number; }, eventRow: { [x: str
     }
 }
 
+
+function prettyMessage(msg: { [header: string]: string }) {
+    let clazz = msg["clazz"];
+    let p = clazz.lastIndexOf(".");
+    if (p !== -1) {
+        clazz = clazz.substring(p+1);
+    }
+    let sender = "";
+    if ("sender" in msg){
+        sender = msg["sender"];
+    }
+    let recipient = "";
+    if ("recipient" in msg){
+        recipient = msg["recipient"];
+    }
+    return `${clazz} [[${sender} -> ${recipient}]]`;
+}
+
+
+export function analyse(events: Array<{ [header: string]: any }>) {
+    let traces: Array<[number, string, Array<{ [header: string]: any }>]> = [];
+    let cache: { [id: string]: number; } = {};
+    for (let i = 0; i < events.length; i++) {
+        let eventRow = events[i];
+        let traceID = findTrace(cache, eventRow);
+        if (traceID === undefined) {
+            let compArray = splitComponents(eventRow["component"]);
+            let cname = compArray[0];
+            let cclazz = compArray[1];
+            let cnode = compArray[2];
+            if (cnode !== "") {
+                cnode = `[${cnode}]`;
+            }
+            let desc = cnode + " " + cname;
+            if ("stimulus" in eventRow){
+                desc = cnode + " " + prettyMessage(eventRow["stimulus"]);
+            } else if("response" in eventRow){
+                desc = cnode + " " + prettyMessage(eventRow["response"]);
+            }
+            traces.push([eventRow["time"], desc, [eventRow]]);
+            traceID = traces.length - 1;
+        }
+        else {
+            traces[traceID][2].push(eventRow);
+        }
+        addToCache(cache, eventRow, traceID);
+        console.log(traces);
+        console.log(cache);
+    }
+    return traces;
+}

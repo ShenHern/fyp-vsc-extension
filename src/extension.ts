@@ -2,9 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import fs = require('fs');
-import { splitComponents } from './functions';
-import { exit } from 'process';
-
+import { analyse } from './functions';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -49,15 +47,12 @@ export function activate(context: vscode.ExtensionContext) {
 					let traceObj = JSON.parse(rawData.toString());
 					// console.log(traceObj.events);
 					for (let i = 0; i < traceObj.events.length; i++) {
-						for (let j = 0; j < traceObj.events[i].events.length; j++) {
-							// console.log(traceObj.events[i].events[j]);
-							// console.log(splitComponents(traceObj.events[i].events[j]["component"]));
-							let componentArr: Array<string> = splitComponents(traceObj.events[i].events[j]["component"]);
-
-							console.log(`component name: ${componentArr[0]}
-component clazz: ${componentArr[1]} 
-component node: ${componentArr[2]}`);
-						}
+						// for (let j = 0; j < traceObj.events[i].events.length; j++) {
+						// 	// console.log(traceObj.events[i].events[j]);
+						// 	// console.log(splitComponents(traceObj.events[i].events[j]["component"]));
+						// }
+						let traces = analyse(traceObj.events[i].events);
+						console.log(traces);
 					}
 				}
 			});
