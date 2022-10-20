@@ -176,7 +176,7 @@ function capture(actors: Array<[string, string]>, msgs: Array<[number, string, s
 /**
  * A public function that sequences the events in a given trace.
  * @param events the Array of events for a given trace
- * @returns a pair containing: (i) a list of unique actors, (ii) a list of sequenced messages
+ * @returns a pair containing: (i) a list of unique sorted actors, (ii) a list of sequenced messages
  */
 export function sequence(events: Array<{ [header: string]: any }>): [Array<[string, string]>, Array<[number, string, string, string]>] {
     let actors: Array<[string, string]> = [];
