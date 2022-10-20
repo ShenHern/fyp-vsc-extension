@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import fs = require('fs');
-import { analyse } from './functions';
+import { analyse, mermaid, sequence } from './functions';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -52,7 +52,10 @@ export function activate(context: vscode.ExtensionContext) {
 						// 	// console.log(splitComponents(traceObj.events[i].events[j]["component"]));
 						// }
 						let traces = analyse(traceObj.events[i].events);
-						console.log(traces);
+						// console.log(traces);
+						let sequenceResult = sequence(traces[3][2]);
+						if (sequenceResult !== undefined){
+							mermaid(sequenceResult[0], sequenceResult[1]);}
 					}
 				}
 			});
