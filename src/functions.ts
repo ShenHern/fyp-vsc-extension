@@ -97,7 +97,7 @@ function prettyMessage(msg: { [header: string]: string; }) {
 /**
  * Public function to analyse a group of events from a session and groups them into different traces.
  * @param events group of events from a session
- * @returns list of tuples of size = num_of_traces e.g.kdf [(time, desc, traceOfEvents), ...]
+ * @returns list of tuples of size = num_of_traces e.g. [(time, desc, traceOfEvents), ...]
  */
 export function analyse(events: Array<{ [header: string]: any }>) {
     let traces: Array<[number, string, Array<{ [header: string]: any }>]> = [];
@@ -173,6 +173,11 @@ function capture(actors: Array<[string, string]>, msgs: Array<[number, string, s
     msgs.push([time, clazz, sender, recipient]);
 }
 
+/**
+ * A public function that sequences the events in a given trace.
+ * @param events the Array of events for a given trace
+ * @returns a pair containing: (i) a list of unique actors, (ii) a list of sequenced messages
+ */
 export function sequence(events: Array<{ [header: string]: any }>): [Array<[string, string]>, Array<[number, string, string, string]>] {
     let actors: Array<[string, string]> = [];
     let msgs: Array<[number, string, string, string]> = [];
@@ -216,6 +221,11 @@ function sortFunction(a: [string, string], b: [string, string]) {
     }
 }
 
+/**
+ * A function that writes the mermaid instructions to a string.
+ * @param actors a list of unique actors (agents)
+ * @param msgs a list of sequenced messages
+ */
 export function mermaid(actors: Array<[string, string]>, msgs: Array<[number, string, string, string]>) {
     let output = "";
     output += "sequenceDiagram\n";
