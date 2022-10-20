@@ -52,7 +52,7 @@ export function activate(context: vscode.ExtensionContext) {
 						for (let j = 0; j < traceObj.events[i].events.length; j++) {
 							// console.log(traceObj.events[i].events[j]);
 							// console.log(splitComponents(traceObj.events[i].events[j]["component"]));
-							let componentArr = splitComponents(traceObj.events[i].events[j]["component"]);
+							let componentArr: Array<string> = splitComponents(traceObj.events[i].events[j]["component"]);
 
 							console.log(`component name: ${componentArr[0]}
 component clazz: ${componentArr[1]} 

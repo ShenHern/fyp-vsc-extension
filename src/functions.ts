@@ -1,3 +1,8 @@
+/**
+ * A function to split the component into useful parts.
+ * @param s the component string
+ * @returns an array containing split component parts
+ */
 export function splitComponents(s: string) {
     const regexName = /\w.*(?=::)/;
     const regexClazz = /[^\.]*(?=\/)/;
