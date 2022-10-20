@@ -1,6 +1,6 @@
 {
-  "name": "helloworld",
-  "displayName": "HelloWorld",
+  "name": "unettrace",
+  "displayName": "UnetTrace",
   "description": "",
   "version": "0.0.1",
   "engines": {
@@ -10,24 +10,24 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:helloworld.helloWorld",
-    "onCommand:helloworld.helloWorld2",
-    "onCommand:helloworld.openFileDialog"
+    "onCommand:unettrace.helloWorld",
+    "onCommand:unettrace.helloWorld2",
+    "onCommand:unettrace.trace"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "helloworld.helloWorld",
-        "title": "Hello: Hello World!"
+        "command": "unettrace.helloWorld",
+        "title": "UnetTrace: Hello World!"
       },
       {
-        "command": "helloworld.helloWorld2",
-        "title": "Hello: Hello World 2!"
+        "command": "unettrace.helloWorld2",
+        "title": "UnetTrace: Hello World 2!"
       },
       {
-        "command": "helloworld.openFileDialog",
-        "title": "Trace: Create Visualisation from File"
+        "command": "unettrace.trace",
+        "title": "UnetTrace: Create Visualisation from Trace File"
       }
     ]
   },

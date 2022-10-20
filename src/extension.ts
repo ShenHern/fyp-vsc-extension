@@ -14,19 +14,19 @@ export function activate(context: vscode.ExtensionContext) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('helloworld.helloWorld', () => {
+	let disposable = vscode.commands.registerCommand('unettrace.helloWorld', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
 		vscode.window.showInformationMessage('Hello World from VSCode!');
 	});
 
-	let disposable2 = vscode.commands.registerCommand('helloworld.helloWorld2', () => {
+	let disposable2 = vscode.commands.registerCommand('unettrace.helloWorld2', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
 		vscode.window.showWarningMessage('Hello World 2!');
 	});
 
-	let disposable3 = vscode.commands.registerCommand('helloworld.openFileDialog', () => {
+	let disposable3 = vscode.commands.registerCommand('unettrace.trace', () => {
 		// The code you place here will be executed every time your command is executed
 		// open a file dialog box
 		let ws = vscode.workspace.workspaceFolders;

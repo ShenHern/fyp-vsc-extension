@@ -1,31 +1,27 @@
-# helloworld README
+# UnetTrace Plugin README
 
-This is the README for your extension "helloworld". After writing up a brief description, we recommend including the following sections.
+VScode plugin to visualise messages being sent to and from different agents and layers in UnetStack.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+User will be able to select a trace.json file. The events in the trace file will be displayed in a graph/diagram that is interactive and displays relevant information about each message transfer (e.g. sending agent, receiving agent, messageID, etc).
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+Please refer to https://code.visualstudio.com/api on how to setup the work environment for building VSC extensions.
+
+Briefly put, the following are required:
+- node.js
+- Git
+- VS Code Extension Generator (yo code)
 
 ## Extension Settings
 
 Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
 
-For example:
-
 This extension contributes the following settings:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+* `unettrace.trace`: Allows user to choose a trace.json file that is used for visualisation of message transfers.
 
 ## Known Issues
 
