@@ -55,7 +55,10 @@ export function activate(context: vscode.ExtensionContext) {
 						// console.log(traces);
 						let sequenceResult = sequence(traces[3][2]);
 						if (sequenceResult !== undefined){
-							mermaid(sequenceResult[0], sequenceResult[1]);}
+							console.log(sequenceResult[2]);
+							let output = mermaid(sequenceResult[0], sequenceResult[1]);
+							console.log(output);
+						}
 					}
 				}
 			});

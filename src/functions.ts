@@ -1,3 +1,5 @@
+import { TreeCache, TreeNode } from "./types";
+
 /**
  * A function to split the component into useful parts.
  * @param s the component string
@@ -108,7 +110,6 @@ export function analyse(events: Array<{ [header: string]: any }>) {
         if (traceID === undefined) {
             let compArray = splitComponents(eventRow["component"]);
             let cname = compArray[0];
-            let cclazz = compArray[1];
             let cnode = compArray[2];
             if (cnode !== "") {
                 cnode = `[${cnode}]`;
@@ -130,6 +131,18 @@ export function analyse(events: Array<{ [header: string]: any }>) {
     return traces;
 }
 
+/**
+ * A function that decides whether to capture a given message or to ignore it. Also stores the filtered actors and messages in the arrays provided in arguments.
+ * @param actors an array of actors (agents)
+ * @param msgs an array to store the sequenced messages
+ * @param origin dictionary of nodes seen before
+ * @param node node of current event (component node)
+ * @param agent agent of current event (component name)
+ * @param time the current time
+ * @param msg event["stimulus"] or event["response"]
+ * @param stimulus indicate if stimulus or not
+ * @returns void
+ */
 function capture(actors: Array<[string, string]>, msgs: Array<[number, string, string, string]>, origin: { [trf: string]: string; }, node: string, agent: string, time: number, msg: { [header: string]: string; }, stimulus: boolean) {
     if (!("recipient" in msg)) {
         return;
@@ -178,14 +191,14 @@ function capture(actors: Array<[string, string]>, msgs: Array<[number, string, s
  * @param events the Array of events for a given trace
  * @returns a pair containing: (i) a list of unique sorted actors, (ii) a list of sequenced messages
  */
-export function sequence(events: Array<{ [header: string]: any }>): [Array<[string, string]>, Array<[number, string, string, string]>] {
+export function sequence(events: Array<{ [header: string]: any }>): [Array<[string, string]>, Array<[number, string, string, string]>, TreeNode] {
     let actors: Array<[string, string]> = [];
     let msgs: Array<[number, string, string, string]> = [];
     let origin: { [trf: string]: string; } = {};
+    let treeCache: TreeCache = {};
     for (let i = 0; i < events.length; i++) {
         let compArray = splitComponents(events[i]["component"]);
         let cname = compArray[0];
-        let cclazz = compArray[1];
         let cnode = compArray[2];
 
         if ("stimulus" in events[i]) {
@@ -194,12 +207,15 @@ export function sequence(events: Array<{ [header: string]: any }>): [Array<[stri
         if ("response" in events[i]) {
             capture(actors, msgs, origin, cnode, cname, events[i]["time"], events[i]["response"], false);
         }
+        //TODO: add updateTree() method below
+        updateTree(events[i]["stimulus"], events[i]["response"], treeCache, events[i]["time"], cnode, cname);
     }
+
     actors.sort(sortFunction);
-    // let unique = actors.filter((item, i, ar) => ar.indexOf(item) === i);
+    // getting the unique actors
     let d: { [x: string]: any } = {};
     let out = [];
-    for (var i = 0; i < actors.length; i++) {
+    for (let i = 0; i < actors.length; i++) {
         let item = actors[i];
         let rep = item.toString();
 
@@ -208,8 +224,8 @@ export function sequence(events: Array<{ [header: string]: any }>): [Array<[stri
             out.push(item);
         }
     }
-
-    return [out, msgs];
+    //return head from treeCache
+    return [out, msgs, treeCache["head"]];
 }
 
 function sortFunction(a: [string, string], b: [string, string]) {
@@ -222,7 +238,7 @@ function sortFunction(a: [string, string], b: [string, string]) {
 }
 
 /**
- * A function that writes the mermaid instructions to a string.
+ * A public function that writes the mermaid instructions to a string.
  * @param actors a list of unique actors (agents)
  * @param msgs a list of sequenced messages
  */
@@ -242,5 +258,82 @@ export function mermaid(actors: Array<[string, string]>, msgs: Array<[number, st
         if (msg[1] === "AGREE") { output += '-'; }
         output += `->>${id2}: ${(msg[1])}\n`;
     }
-    console.log(output);
+    return output;
+}
+
+function findNode(cache: TreeCache, msgID: string) {
+    if (msgID in cache) {
+        return cache[msgID];
+    }
+    return undefined;
+}
+
+//TODO: develop updateTree() method
+function updateTree(stimulus: { [header: string]: any; }, response: { [header: string]: any; }, cache: TreeCache, time: number, node: string, agent: string) {
+    //get the stimulus from cache
+    let stim = findNode(cache, stimulus["messageID"]);
+
+    //otherwise build a new stimulus TreeNode object
+    if (stim === undefined) {
+        //create the stimulus object
+        let stimClazz = stimulus["clazz"];
+        let p = stimClazz.lastIndexOf('.');
+        if (p !== -1) {
+            //get the last clazz after the last '.'
+            stimClazz = stimClazz.substring(p + 1);
+        }
+        stim = {
+            parent: {},
+            children: {},
+            time: time,
+            clazz: stimClazz,
+            sender: stimulus["sender"] + `/${node}`,
+            recipient: stimulus["recipient"] + `/${node}`
+        };
+        //update the head of TreeCache
+        cache["head"] = stim;
+    }
+
+    if (stim.sender === stim.recipient) {
+        //try to replece recipient with new node for HalfDuplexModem cases
+        stim.recipient = stim.recipient.split('/')[0] + `/${node}`;
+    }
+
+    if (stim.recipient.startsWith('#')) {
+        //replce recipients starting with '#'. E.g. recipient: "#phy__ntf"
+        stim.recipient = agent + `/${node}`;
+    }
+
+    let clazz = response["clazz"];
+    if (clazz === "org.arl.fjage.Message") {
+        clazz = response["performative"];
+    } else {
+        let p = clazz.lastIndexOf('.');
+        if (p !== -1) {
+            //get the last clazz after the last '.'
+            clazz = clazz.substring(p + 1);
+        }
+    }
+    let respSender = agent;
+    if ("sender" in response) {
+        respSender = response.sender;
+    }
+    //build the response TreeNode object
+    let resp: TreeNode = {
+        parent: {},
+        children: {},
+        time: time,
+        clazz: clazz,
+        sender: respSender + `/${node}`,
+        recipient: response.recipient + `/${node}`
+    };
+
+    //update the stimulus TreeNode with child
+    stim.children[response.messageID] = resp;
+    //update the response TreeNode with parent
+    resp.parent[stimulus.messageID] = stim;
+
+    //add stim and resp TreeNode to cache
+    cache[stimulus.messageID] = stim;
+    cache[response.messageID] = resp;
 }
