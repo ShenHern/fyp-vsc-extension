@@ -207,7 +207,6 @@ export function sequence(events: Array<{ [header: string]: any }>): [Array<[stri
         if ("response" in events[i]) {
             capture(actors, msgs, origin, cnode, cname, events[i]["time"], events[i]["response"], false);
         }
-        //TODO: add updateTree() method below
         updateTree(events[i]["stimulus"], events[i]["response"], treeCache, events[i]["time"], cnode, cname);
     }
 
@@ -261,6 +260,12 @@ export function mermaid(actors: Array<[string, string]>, msgs: Array<[number, st
     return output;
 }
 
+/**
+ * Function to find a node in tree.
+ * @param cache the cache that is storing the tree
+ * @param msgID the key used to retrieve the node; the stimulus.messageID
+ * @returns the node if present, otherwise undefined
+ */
 function findNode(cache: TreeCache, msgID: string) {
     if (msgID in cache) {
         return cache[msgID];
@@ -268,7 +273,15 @@ function findNode(cache: TreeCache, msgID: string) {
     return undefined;
 }
 
-//TODO: develop updateTree() method
+/**
+ * Function that returns a doubly linked tree from trace.json.
+ * @param stimulus the stimulus message
+ * @param response the response message
+ * @param cache the cache storing the tree
+ * @param time time that messages occured
+ * @param node node in this case refers to name of underwater node
+ * @param agent agent of current event (component name)
+ */
 function updateTree(stimulus: { [header: string]: any; }, response: { [header: string]: any; }, cache: TreeCache, time: number, node: string, agent: string) {
     //get the stimulus from cache
     let stim = findNode(cache, stimulus["messageID"]);
