@@ -5,10 +5,6 @@ import * as fs from 'fs';
 import { analyse, mermaid, sequence } from './functions';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
-const cats = {
-	'codingCat': 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
-	'compilingCat': 'https://media.giphy.com/media/mlvseq9yvZhba/giphy.gif'
-};
 
 let currentPanel: vscode.WebviewPanel | undefined = undefined;
 
@@ -80,28 +76,18 @@ export function activate(context: vscode.ExtensionContext) {
 				"catCoding",
 				"Cat Coding",
 				columnToShowIn ? columnToShowIn : vscode.ViewColumn.One,
-				{}
+				{
+					enableScripts: true,
+					retainContextWhenHidden: true,
+				}
 			);
 		}
 
-		//set the webview's HTML content
-		let iteration = 0;
-		const updateWebView = () => {
-			const cat = iteration++ % 2? "codingCat" : "compilingCat";
-			if (currentPanel === undefined) {
-				throw new Error("Error: cat coding can't be shown");
-			}
-			currentPanel.title = cat;
-			currentPanel.webview.html = getWebViewContent(cat);
-		};
-		
-		updateWebView();
-		const interval = setInterval(updateWebView, 1000);
-		// const timeout = setTimeout(() => panel.dispose(), 5000);
+		currentPanel.webview.html = getWebviewContent();
 
 		currentPanel.onDidDispose(
 			() => {
-				clearInterval(interval);
+				// clearInterval(interval);
 				currentPanel = undefined;
 				// clearTimeout(timeout);
 			},
@@ -116,19 +102,29 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(disposable4);
 }
 
-function getWebViewContent(cat: keyof typeof cats) {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cat Coding</title>
-</head>
-<body>
-    <img src="${cats[cat]}" width="300" />
-</body>
-</html>`;
-}
+function getWebviewContent() {
+	return `<!DOCTYPE html>
+  <html lang="en">
+  <head>
+	  <meta charset="UTF-8">
+	  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	  <title>Cat Coding</title>
+  </head>
+  <body>
+	  <img src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" width="300" />
+	  <h1 id="lines-of-code-counter">0</h1>
+  
+	  <script>
+		  const counter = document.getElementById('lines-of-code-counter');
+  
+		  let count = 0;
+		  setInterval(() => {
+			  counter.textContent = count++;
+		  }, 100);
+	  </script>
+  </body>
+  </html>`;
+  }
 
 // this method is called when your extension is deactivated
 export function deactivate() { }
