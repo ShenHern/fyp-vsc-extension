@@ -1,10 +1,17 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import fs = require('fs');
+import * as fs from 'fs';
 import { analyse, mermaid, sequence } from './functions';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
+const cats = {
+	'codingCat': 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
+	'compilingCat': 'https://media.giphy.com/media/mlvseq9yvZhba/giphy.gif'
+};
+
+let currentPanel: vscode.WebviewPanel | undefined = undefined;
+
 export function activate(context: vscode.ExtensionContext) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
@@ -39,36 +46,88 @@ export function activate(context: vscode.ExtensionContext) {
 		p1.then(
 			(result) => {
 				console.log(result);
-				if (result !== undefined) {
-					vscode.window.showInformationMessage(result[0].path);
-					let tracePath = result[0].path;
-					tracePath = tracePath.substring(1);	// remove first slash from path provided by vscode API
-					let rawData = fs.readFileSync(tracePath);
-					let traceObj = JSON.parse(rawData.toString());
-					// console.log(traceObj.events);
-					for (let i = 0; i < traceObj.events.length; i++) {
-						// for (let j = 0; j < traceObj.events[i].events.length; j++) {
-						// 	// console.log(traceObj.events[i].events[j]);
-						// 	// console.log(splitComponents(traceObj.events[i].events[j]["component"]));
-						// }
-						let traces = analyse(traceObj.events[i].events);
-						// console.log(traces);
-						let sequenceResult = sequence(traces[3][2]);
-						if (sequenceResult !== undefined){
-							console.log(sequenceResult[2]);
-							let output = mermaid(sequenceResult[0], sequenceResult[1]);
-							console.log(output);
-						}
+				if (result === undefined) {
+					throw new Error("File not found!");
+				}
+				vscode.window.showInformationMessage(result[0].path);
+				let tracePath = result[0].path;
+				tracePath = tracePath.substring(1);	// remove first slash from path provided by vscode API
+				let rawData = fs.readFileSync(tracePath);
+				let traceObj = JSON.parse(rawData.toString());
+				for (let i = 0; i < traceObj.events.length; i++) {
+					let traces = analyse(traceObj.events[i].events);
+					let sequenceResult = sequence(traces[3][2]);
+					if (sequenceResult === undefined) {
+						throw new Error("Could not find sequence in trace.");
 					}
+					console.log(sequenceResult[2]);
+					let output = mermaid(sequenceResult[0], sequenceResult[1]);
+					console.log(output);
 				}
 			});
 	});
 
+	let disposable4 = vscode.commands.registerCommand("unettrace.catcoding", () => {
+		//create and show a new webview
+		const columnToShowIn = vscode.window.activeTextEditor
+			? vscode.window.activeTextEditor.viewColumn
+			: undefined;
 
+		if (currentPanel) {
+			currentPanel.reveal(columnToShowIn);
+		} else {
+			currentPanel = vscode.window.createWebviewPanel(
+				"catCoding",
+				"Cat Coding",
+				columnToShowIn ? columnToShowIn : vscode.ViewColumn.One,
+				{}
+			);
+		}
+
+		//set the webview's HTML content
+		let iteration = 0;
+		const updateWebView = () => {
+			const cat = iteration++ % 2? "codingCat" : "compilingCat";
+			if (currentPanel === undefined) {
+				throw new Error("Error: cat coding can't be shown");
+			}
+			currentPanel.title = cat;
+			currentPanel.webview.html = getWebViewContent(cat);
+		};
+		
+		updateWebView();
+		const interval = setInterval(updateWebView, 1000);
+		// const timeout = setTimeout(() => panel.dispose(), 5000);
+
+		currentPanel.onDidDispose(
+			() => {
+				clearInterval(interval);
+				currentPanel = undefined;
+				// clearTimeout(timeout);
+			},
+			null,
+			context.subscriptions
+		);
+	});
 
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(disposable2);
 	context.subscriptions.push(disposable3);
+	context.subscriptions.push(disposable4);
+}
+
+function getWebViewContent(cat: keyof typeof cats) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Coding</title>
+</head>
+<body>
+    <img src="${cats[cat]}" width="300" />
+</body>
+</html>`;
 }
 
 // this method is called when your extension is deactivated

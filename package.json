@@ -12,7 +12,8 @@
   "activationEvents": [
     "onCommand:unettrace.helloWorld",
     "onCommand:unettrace.helloWorld2",
-    "onCommand:unettrace.trace"
+    "onCommand:unettrace.trace",
+    "onCommand:unettrace.catcoding"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -28,6 +29,10 @@
       {
         "command": "unettrace.trace",
         "title": "UnetTrace: Create Visualisation from Trace File"
+      },
+      {
+        "command": "unettrace.catcoding",
+        "title": "UnetTrace: Start new Cat Coding Session"
       }
     ]
   },
