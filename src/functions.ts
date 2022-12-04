@@ -1,5 +1,5 @@
 import { TreeCache, TreeNode } from "./types";
-import { Stack } from "./classes/Stack";
+import { Queue } from "./classes/Queue";
 
 /**
  * A function to split the component into useful parts.
@@ -354,16 +354,16 @@ function updateTree(stimulus: { [header: string]: any; }, response: { [header: s
     cache[response.messageID] = resp;
 }
 
-export function inOrderTraversal(root: TreeNode) {
+export function levelOrderTraversal(root: TreeNode) {
     let current = root;
-    let stack = new Stack<TreeNode>();
-    stack.push(current);
-    while (!stack.isEmpty()) {
-        current = stack.pop();
+    let queue = new Queue<TreeNode>();
+    queue.push(current);
+    while (!queue.isEmpty()) {
+        current = queue.pop();
         // build html element from current node
 
         for (let child in current.children) {
-            stack.push(current.children[child]);
+            queue.push(current.children[child]);
         }
     }
 }

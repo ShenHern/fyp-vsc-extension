@@ -1,10 +1,10 @@
-export class Stack<T> {
+export class Queue<T> {
     private array: T[] = [];
 
     pop(): T {
         if (this.isEmpty()) {throw new Error("Empty Stack!");}
 
-        let value = this.array.pop();
+        let value = this.array.shift();
         if (value === undefined) {
             throw new Error("Error popping element from Stack!");
         } else {
