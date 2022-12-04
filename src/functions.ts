@@ -1,4 +1,5 @@
 import { TreeCache, TreeNode } from "./types";
+import { Stack } from "./classes/Stack";
 
 /**
  * A function to split the component into useful parts.
@@ -296,6 +297,7 @@ function updateTree(stimulus: { [header: string]: any; }, response: { [header: s
             stimClazz = stimClazz.substring(p + 1);
         }
         stim = {
+            id: stimulus["messageID"],
             parent: {},
             children: {},
             time: time,
@@ -333,6 +335,7 @@ function updateTree(stimulus: { [header: string]: any; }, response: { [header: s
     }
     //build the response TreeNode object
     let resp: TreeNode = {
+        id: response['messageID'],
         parent: {},
         children: {},
         time: time,
@@ -349,4 +352,18 @@ function updateTree(stimulus: { [header: string]: any; }, response: { [header: s
     //add stim and resp TreeNode to cache
     cache[stimulus.messageID] = stim;
     cache[response.messageID] = resp;
+}
+
+export function inOrderTraversal(root: TreeNode) {
+    let current = root;
+    let stack = new Stack<TreeNode>();
+    stack.push(current);
+    while (!stack.isEmpty()) {
+        current = stack.pop();
+        // build html element from current node
+
+        for (let child in current.children) {
+            stack.push(current.children[child]);
+        }
+    }
 }

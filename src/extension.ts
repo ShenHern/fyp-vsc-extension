@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { analyse, mermaid, sequence } from './functions';
+import { analyse, mermaid, sequence, inOrderTraversal } from './functions';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 
@@ -56,7 +56,10 @@ export function activate(context: vscode.ExtensionContext) {
 					if (sequenceResult === undefined) {
 						throw new Error("Could not find sequence in trace.");
 					}
-					console.log(sequenceResult[2]);
+					console.log(sequenceResult[2]); //root of tree after sequencing a trace
+					// in order traversal of tree
+					inOrderTraversal(sequenceResult[2]);
+					
 					let output = mermaid(sequenceResult[0], sequenceResult[1]);
 					console.log(output);
 				}
@@ -78,12 +81,22 @@ export function activate(context: vscode.ExtensionContext) {
 				columnToShowIn ? columnToShowIn : vscode.ViewColumn.One,
 				{
 					enableScripts: true,
-					retainContextWhenHidden: true,
 				}
 			);
 		}
 
 		currentPanel.webview.html = getWebviewContent();
+
+		currentPanel.webview.onDidReceiveMessage(
+			message => {
+				switch (message.command) {
+					case 'alert':
+						vscode.window.showErrorMessage(message.text);
+				}
+			},
+			undefined,
+			context.subscriptions
+		);
 
 		currentPanel.onDidDispose(
 			() => {
@@ -115,16 +128,27 @@ function getWebviewContent() {
 	  <h1 id="lines-of-code-counter">0</h1>
   
 	  <script>
-		  const counter = document.getElementById('lines-of-code-counter');
-  
-		  let count = 0;
-		  setInterval(() => {
-			  counter.textContent = count++;
-		  }, 100);
+			const vscode = acquireVsCodeApi();
+			const previousState = vscode.getState();
+			const counter = document.getElementById('lines-of-code-counter');
+
+			let count = previousState? previousState.count : 0;
+			setInterval(() => {
+				counter.textContent = count++;
+				vscode.setState({ count });
+
+				// Alert the extension when our cat introduces a bug
+				if (Math.random() < 0.001 * count) {
+					vscode.postMessage({
+						command: 'alert',
+						text: '🐛  on line ' + count
+					})
+				}
+			}, 100);
 	  </script>
   </body>
   </html>`;
-  }
+}
 
 // this method is called when your extension is deactivated
 export function deactivate() { }

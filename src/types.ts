@@ -3,6 +3,7 @@ export interface TreeCache {
 }
 
 export interface TreeNode {
+    id: string;
     parent: { [stimulusID: string]: TreeNode };
     children: { [childIDs: string]: TreeNode };
     time: number;

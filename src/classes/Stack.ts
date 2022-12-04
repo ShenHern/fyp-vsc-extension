@@ -1,10 +1,15 @@
-class Stack<T> {
+export class Stack<T> {
     private array: T[] = [];
 
-    pop(): T | undefined {
+    pop(): T {
         if (this.isEmpty()) {throw new Error("Empty Stack!");}
 
-        return this.array.pop();
+        let value = this.array.pop();
+        if (value === undefined) {
+            throw new Error("Error popping element from Stack!");
+        } else {
+            return value;
+        }
     }
 
     push(data: T): void {
