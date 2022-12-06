@@ -1,34 +1,19 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
+import { join } from 'path';
 import * as vscode from 'vscode';
+import { ExtensionContext, ExtensionMode, Uri, Webview } from 'vscode';
 import fs = require('fs');
 import { analyse, mermaid, sequence } from './functions';
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
+import { MessageHandlerData } from '@estruyf/vscode';
+import { TreeNode } from './types';
+
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "UnetTrace" is now active!');
+	var output : any;
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('unettrace.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from VSCode!');
-	});
-
-	let disposable2 = vscode.commands.registerCommand('unettrace.helloWorld2', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showWarningMessage('Hello World 2!');
-	});
-
-	let disposable3 = vscode.commands.registerCommand('unettrace.trace', () => {
-		// The code you place here will be executed every time your command is executed
-		// open a file dialog box
+	let disposable = vscode.commands.registerCommand('unettrace.generateTrace', () => {
 		let ws = vscode.workspace.workspaceFolders;
 		let rootPathStr = ".";
 		if (ws) {
@@ -55,21 +40,92 @@ export function activate(context: vscode.ExtensionContext) {
 						// console.log(traces);
 						let sequenceResult = sequence(traces[3][2]);
 						if (sequenceResult !== undefined){
-							console.log(sequenceResult[2]);
-							let output = mermaid(sequenceResult[0], sequenceResult[1]);
-							console.log(output);
+							// console.log(sequenceResult[2]);
+							// output = sequenceResult[2];
+							output = mermaid(sequenceResult[0], sequenceResult[1]);
+							// console.log(output);
 						}
 					}
 				}
-			});
+			}
+		);
 	});
 
+	let disposable1 = vscode.commands.registerCommand('unettrace.openWebview', () => {
+		const panel = vscode.window.createWebviewPanel(
+			'Trace webview',
+			'Trace Webview',
+			vscode.ViewColumn.One,
+			{
+				enableScripts: true,
+				retainContextWhenHidden: true
+			}
+		);
 
+		panel.webview.onDidReceiveMessage(message => {
+			const { command, requestId, payload } = message;
+			var text : String;
+			if (command === "GET_DATA") {
+				// Do something with the payload
+				if (output == undefined) {
+					text = "Upload trace.json file first";
+				}
+				else {
+					text = output;
+				}
+				// Send a response back to the webview
+				panel.webview.postMessage({
+					command,
+					requestId, // The requestId is used to identify the response
+					payload: text
+				} as MessageHandlerData<string>);
+			} else if (command === "GET_DATA_ERROR" ) {
+				panel.webview.postMessage({
+					command,
+					requestId, // The requestId is used to identify the response
+					error: `Oops, something went wrong!`
+				} as MessageHandlerData<string>);
+			} else if (command === "POST_DATA") {
+				vscode.window.showInformationMessage(`Received data from the webview: ${payload.msg}`);
+			}
+		}, undefined, context.subscriptions);
+
+		panel.webview.html = getWebviewContent(context, panel.webview);
+	});
 
 	context.subscriptions.push(disposable);
-	context.subscriptions.push(disposable2);
-	context.subscriptions.push(disposable3);
+	context.subscriptions.push(disposable1);
 }
 
 // this method is called when your extension is deactivated
-export function deactivate() { }
+export function deactivate() {}
+
+
+const getWebviewContent = (context: ExtensionContext, webview: Webview) => {
+	const jsFile = "webview.js";
+	const localServerUrl = "http://localhost:9000";
+
+	let scriptUrl = null;
+	let cssUrl = null;
+
+	const isProduction = context.extensionMode === ExtensionMode.Production;
+	if (isProduction) {
+		scriptUrl = webview.asWebviewUri(Uri.file(join(context.extensionPath, 'dist', jsFile))).toString();
+	} else {
+		scriptUrl = `${localServerUrl}/${jsFile}`; 
+	}
+
+	return `<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		${isProduction ? `<link href="${cssUrl}" rel="stylesheet">` : ''}
+	</head>
+	<body>
+		<div id="root"></div>
+
+		<script src="${scriptUrl}" />
+	</body>
+	</html>`;
+}
