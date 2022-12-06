@@ -20,13 +20,13 @@ The webview can be tested/opened by running the `React Webview: Open webview` co
 
 ### Without MessageHandler
 
-![Untitled](Unet%20VS%20pluggin%202533d4b0d3cc44e1aa8667aac15311fd/Untitled.png)
+![Untitled](./assets/Untitled.png)
 
 In the extension/webview communication, you send a message, but you won’t get a response. You listen to messages coming back, making it a disconnected experience.
 
 ### With MessageHandler
 
-![Untitled](Unet%20VS%20pluggin%202533d4b0d3cc44e1aa8667aac15311fd/Untitled%201.png)
+![Untitled](./assets/Untitled%201.png)
 
 When requesting data with the message handler, it creates a callback function that returns a promise and identifies it with a **requestId.** The message sends this ID with the message command and payload to the extension listener.
 
@@ -50,7 +50,7 @@ Initialize **var output : any**
 
 ### **********************disposable1 → openWebview**********************
 
-![Untitled](Unet%20VS%20pluggin%202533d4b0d3cc44e1aa8667aac15311fd/Untitled%202.png)
+![Untitled](./assets/Untitled%202.png)
 
 Open webview panel nothing much
 
@@ -60,7 +60,7 @@ each message has a command, requestID, payload (contains data)
 
 when button is pressed (ignore the other 2 for now)
 
-![Untitled](Unet%20VS%20pluggin%202533d4b0d3cc44e1aa8667aac15311fd/Untitled%204.png)
+![Untitled](./assets/Untitled%204.png)
 
 (src/webview/App.tsx)
 
@@ -92,10 +92,10 @@ if output == undefined (havent upload trace.json yet)
 
 text = "Upload trace.json file first”
 
-![Untitled](Unet%20VS%20pluggin%202533d4b0d3cc44e1aa8667aac15311fd/Untitled%205.png)
+![Untitled](./assets/Untitled%205.png)
 
 else
 
 text = output
 
-![Untitled](Unet%20VS%20pluggin%202533d4b0d3cc44e1aa8667aac15311fd/Untitled%206.png)
+![Untitled](./assets/Untitled%206.png)
