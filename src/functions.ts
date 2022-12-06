@@ -100,7 +100,7 @@ function prettyMessage(msg: { [header: string]: string; }) {
 /**
  * Public function to analyse a group of events from a session and groups them into different traces.
  * @param events group of events from a session
- * @returns list of tuples of size = num_of_traces e.g. [(time, desc, traceOfEvents), ...]
+ * @returns list of tuples of size equal to number of traces e.g. [(time, desc, traceOfEvents), ...]
  */
 export function analyse(events: Array<{ [header: string]: any }>) {
     let traces: Array<[number, string, Array<{ [header: string]: any }>]> = [];
@@ -123,8 +123,7 @@ export function analyse(events: Array<{ [header: string]: any }>) {
             }
             traces.push([eventRow["time"], desc, [eventRow]]);
             traceID = traces.length - 1;
-        }
-        else {
+        } else {
             traces[traceID][2].push(eventRow);
         }
         addToCache(cache, eventRow, traceID);
@@ -190,7 +189,7 @@ function capture(actors: Array<[string, string]>, msgs: Array<[number, string, s
 /**
  * A public function that sequences the events in a given trace.
  * @param events the Array of events for a given trace
- * @returns a pair containing: (i) a list of unique sorted actors, (ii) a list of sequenced messages
+ * @returns a triple containing: (i) a list of unique sorted actors, (ii) a list of sequenced messages, (iii) the root node from the tree of events
  */
 export function sequence(events: Array<{ [header: string]: any }>): [Array<[string, string]>, Array<[number, string, string, string]>, TreeNode] {
     let actors: Array<[string, string]> = [];
@@ -354,6 +353,11 @@ function updateTree(stimulus: { [header: string]: any; }, response: { [header: s
     cache[response.messageID] = resp;
 }
 
+/**
+ * function that sorts the event tree into chronological order.
+ * @param root root of the event tree
+ * @returns a list with the event tree nodes in chronological order
+ */
 export function sortTreeByTime(root: TreeNode) {
 
     let current = root;
@@ -380,6 +384,11 @@ export function sortTreeByTime(root: TreeNode) {
 
 }
 
+/**
+ * function to create html content that is loaded in a webview.
+ * @param events an array of chronological events returned from sortTreeByTime()
+ * @returns html content as a string
+ */
 export function createHTMLContent(events: Array<TreeNode>) {
     let htmlContent = `<!DOCTYPE html>
 	<html>
