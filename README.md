@@ -54,7 +54,7 @@ Initialize **var output : any**
 
 Open webview panel nothing much
 
-![Untitled](Unet%20VS%20pluggin%202533d4b0d3cc44e1aa8667aac15311fd/Untitled%203.png)
+![Untitled](./assets/Untitled%203.png)
 
 each message has a command, requestID, payload (contains data)
 
