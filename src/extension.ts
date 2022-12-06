@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { analyse, mermaid, sequence, levelOrderTraversal } from './functions';
+import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent } from './functions';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 
@@ -58,97 +58,59 @@ export function activate(context: vscode.ExtensionContext) {
 					}
 					console.log(sequenceResult[2]); //root of tree after sequencing a trace
 					// in order traversal of tree
-					levelOrderTraversal(sequenceResult[2]);
-					
+					let htmlContent = createHTMLContent(sortTreeByTime(sequenceResult[2]));
+					//create and show a new webview
+					const columnToShowIn = vscode.window.activeTextEditor
+						? vscode.window.activeTextEditor.viewColumn
+						: undefined;
+
+					if (currentPanel) {
+						currentPanel.reveal(columnToShowIn);
+					} else {
+						currentPanel = vscode.window.createWebviewPanel(
+							"traceVisualization",
+							"Trace Visualization",
+							columnToShowIn ? columnToShowIn : vscode.ViewColumn.One,
+							{
+								enableScripts: true,
+							}
+						);
+					}
+
+					currentPanel.webview.html = htmlContent;
+
+					currentPanel.webview.onDidReceiveMessage(
+						message => {
+							switch (message.command) {
+								case 'alert':
+									vscode.window.showErrorMessage(message.text);
+							}
+						},
+						undefined,
+						context.subscriptions
+					);
+
+					currentPanel.onDidDispose(
+						() => {
+							// clearInterval(interval);
+							currentPanel = undefined;
+							// clearTimeout(timeout);
+						},
+						null,
+						context.subscriptions
+					);
+
 					let output = mermaid(sequenceResult[0], sequenceResult[1]);
 					console.log(output);
 				}
 			});
 	});
 
-	let disposable4 = vscode.commands.registerCommand("unettrace.catcoding", () => {
-		//create and show a new webview
-		const columnToShowIn = vscode.window.activeTextEditor
-			? vscode.window.activeTextEditor.viewColumn
-			: undefined;
-
-		if (currentPanel) {
-			currentPanel.reveal(columnToShowIn);
-		} else {
-			currentPanel = vscode.window.createWebviewPanel(
-				"catCoding",
-				"Cat Coding",
-				columnToShowIn ? columnToShowIn : vscode.ViewColumn.One,
-				{
-					enableScripts: true,
-				}
-			);
-		}
-
-		currentPanel.webview.html = getWebviewContent();
-
-		currentPanel.webview.onDidReceiveMessage(
-			message => {
-				switch (message.command) {
-					case 'alert':
-						vscode.window.showErrorMessage(message.text);
-				}
-			},
-			undefined,
-			context.subscriptions
-		);
-
-		currentPanel.onDidDispose(
-			() => {
-				// clearInterval(interval);
-				currentPanel = undefined;
-				// clearTimeout(timeout);
-			},
-			null,
-			context.subscriptions
-		);
-	});
-
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(disposable2);
 	context.subscriptions.push(disposable3);
-	context.subscriptions.push(disposable4);
 }
 
-function getWebviewContent() {
-	return `<!DOCTYPE html>
-  <html lang="en">
-  <head>
-	  <meta charset="UTF-8">
-	  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	  <title>Cat Coding</title>
-  </head>
-  <body>
-	  <img src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" width="300" />
-	  <h1 id="lines-of-code-counter">0</h1>
-  
-	  <script>
-			const vscode = acquireVsCodeApi();
-			const previousState = vscode.getState();
-			const counter = document.getElementById('lines-of-code-counter');
-
-			let count = previousState? previousState.count : 0;
-			setInterval(() => {
-				counter.textContent = count++;
-				vscode.setState({ count });
-
-				// Alert the extension when our cat introduces a bug
-				if (Math.random() < 0.001 * count) {
-					vscode.postMessage({
-						command: 'alert',
-						text: '🐛  on line ' + count
-					})
-				}
-			}, 100);
-	  </script>
-  </body>
-  </html>`;
+function getWebviewContent(htmlContent: string) {
+	return htmlContent;
 }
-
-// this method is called when your extension is deactivated
-export function deactivate() { }
