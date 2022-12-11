@@ -541,33 +541,36 @@ export function createHTMLContent(events: Array<TreeNode>) {
     //create html content for each node in events (sorted by time)
     for (let node of events) {
         htmlContent += `<div class="${currentContainer}">
-		<div class="content">
-		  <h2>${node.time}</h2>
+		<div id="${node.id}" class="content">
+		  <h2>Time: ${node.time}</h2>
 		  <p>
-            id: ${node.id}<br>`;    //adding id to event container
+            id: ${node.id}<br><br>`;    //adding id to event container
 
         let parentID = Object.keys(node.parent); //each node aside from root should have 1 parent
         //adding parent to event container if exists
-        if (parentID) {
-            htmlContent += `parent: ${parentID[0]}<br>`;
+        if (parentID.length > 0) {
+            htmlContent += `parent: <a href="#${parentID[0]}">${parentID[0]}</a><br><br>`;
+        } else {
+            htmlContent += `parent: No Parent<br><br>`;
         }
 
         let childrenIDs = Object.keys(node.children);   //getting the children IDs from a particular event
         //adding children to event container if it exists
-        if (childrenIDs) {
-            htmlContent += `children: `;
+        htmlContent += `children: `;
+        if (childrenIDs.length > 0) {
             for (let child of childrenIDs) {
-                htmlContent += `${child}, `;
+                htmlContent += `<a href="#${child}">${child}</a>,<br><br>`;
             }
-            htmlContent += `<br>`;
+        } else {
+            htmlContent += `No Children<br><br>`;
         }
 
         //adding clazz to event container
-        htmlContent += `clazz: ${node.clazz}<br>`;
+        htmlContent += `clazz: ${node.clazz}<br><br>`;
         //adding sender node to event container
-        htmlContent += `sender: ${node.sender}<br>`;
+        htmlContent += `sender: ${node.sender}<br><br>`;
         //adding recipient node to event container
-        htmlContent += `recipient: ${node.recipient}<br>`;
+        htmlContent += `recipient: ${node.recipient}`;
 
         //closing html tags for container
         htmlContent += `
