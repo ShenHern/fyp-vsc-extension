@@ -1,5 +1,9 @@
 import { TreeCache, TreeNode } from "./types";
 import { Queue } from "./classes/Queue";
+import * as fs from 'fs';
+import { parser } from 'stream-json';
+import { pick } from 'stream-json/filters/Pick';
+import { streamArray } from 'stream-json/streamers/StreamArray';
 
 /**
  * A function to split the component into useful parts.
@@ -376,7 +380,7 @@ export function sortTreeByTime(root: TreeNode) {
     }
 
     // sort output list
-    outList.sort(function(a, b) {
+    outList.sort(function (a, b) {
         return a.time - b.time;
     });
 
@@ -593,4 +597,11 @@ export function createHTMLContent(events: Array<TreeNode>) {
     `;
 
     return htmlContent;
+}
+
+export function createJsonStream(tracePath: string) {
+    const pipeline = fs.createReadStream(tracePath).pipe(parser());
+    let groupsOfEvents = pipeline.pipe(pick({ filter: 'events' }));
+    let arrOfGroupsStream = groupsOfEvents.pipe(streamArray());
+    return arrOfGroupsStream;
 }

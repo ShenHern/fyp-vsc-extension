@@ -2,9 +2,8 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent } from './functions';
-const { parser } = require('stream-json');
-const { pick } = require('stream-json/filters/Pick');
+import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent, createJsonStream } from './functions';
+import { trace } from 'console';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 
@@ -50,30 +49,44 @@ export function activate(context: vscode.ExtensionContext) {
 				vscode.window.showInformationMessage(result[0].path);
 				let tracePath = result[0].path;
 				tracePath = tracePath.substring(1);	// remove first slash from path provided by vscode API
-				const pipeline = fs.createReadStream(tracePath).pipe(parser());
-				let groupsOfEvents = pipeline.pipe(pick({filter: 'events'}));
-
-				// allow user to select the desired group of events
-				let groupStringArray = [];
+				let arrOfGroupsStream = createJsonStream(tracePath);
+				/* arrOfGroups looks like this:
+					{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
+					{key: 1, value: group2}
+				*/
+				let groupStringArray: Array<string> = [];
 				let groupQuckPickIndex = 1;
-				for (let groupOfEvents of groupsOfEvents) {
+				// stream the json file once to collate the group names
+				arrOfGroupsStream.on('data', (group) => {
 					// create string array that will be used to display groups for user to select
-					groupStringArray.push(`${groupQuckPickIndex}.\t${groupOfEvents.group}`);
+					groupStringArray.push(`${groupQuckPickIndex}.\t${group.value.group}`);
 					groupQuckPickIndex++;
-				}
+				});
 
+				//create quick pick windows to display the different groups of events
 				// display the quickpick window for event group selection
 				vscode.window.showQuickPick(groupStringArray).then(
 					result => {
-						let groupIndex = Number(result?.charAt(0));
-						if (groupIndex === undefined) {
-							throw new Error("Group not found. Please select a again.");
+						let groupEvents = undefined;
+						const regexGroupName = /(?<=\t)[\w+.-]+/;
+						if (result === undefined) {
+							throw new Error("Group not found.");
 						}
-						return groupIndex;
+						let groupName = regexGroupName.exec(result);
+						let arrOfGroupsStream2 = createJsonStream(tracePath);
+						arrOfGroupsStream2.on('data', (group) => {
+							if (groupName !== group.value.group) { return; }
+
+							groupEvents = group.value.events;
+						});
+						return groupEvents;
 					}
-				).then(groupIndex => {
+				).then(groupEvents => {
+					if (groupEvents === undefined) {
+						throw new Error("Invalid group of Events");
+					}
 					//analysing events to find traces
-					let traces = analyse(groupsOfEvents[groupIndex - 1].events);
+					let traces = analyse(groupEvents);
 					//display the traces of a given group
 					let traceStringArray = [];
 					let traceQuickPickIndex = 1;
@@ -159,4 +172,3 @@ export function activate(context: vscode.ExtensionContext) {
 		);
 	}
 }
-
