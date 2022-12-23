@@ -54,73 +54,77 @@ export function activate(context: vscode.ExtensionContext) {
 					{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
 					{key: 1, value: group2}
 				*/
-				let groupStringArray: Array<string> = [];
-				let groupQuckPickIndex = 1;
+
 				// stream the json file once to collate the group names
 				arrOfGroupsStream.on('data', (group) => {
+					let groupStringArray: Array<string> = [];
+					let groupQuckPickIndex = 1;
 					// create string array that will be used to display groups for user to select
 					groupStringArray.push(`${groupQuckPickIndex}.\t${group.value.group}`);
-					groupQuckPickIndex++;
+					groupStringArray.push("Go to Next Group");
+					arrOfGroupsStream.pause();
+
+					//create quick pick windows to display the different groups of events
+					// display the quickpick window for event group selection
+					vscode.window.showQuickPick(groupStringArray).then(
+						result => {
+							if (result === undefined) {
+								return result;
+							}
+							if (result === "Go to Next Group") {
+								return result;
+							} else {
+								return group.value.events;
+							}
+						}
+					).then(groupEvents => {
+						if (groupEvents === undefined) {
+							throw new Error("Invalid group of Events");
+						} else if (groupEvents === "Go to Next Group") {
+							arrOfGroupsStream.resume();
+							return;
+						}
+						//analysing events to find traces
+						let traces = analyse(groupEvents);
+						//display the traces of a given group
+						let traceStringArray = [];
+						let traceQuickPickIndex = 1;
+						for (let trace of traces) {
+							//create string array to display quick pick of traces
+							traceStringArray.push(`${traceQuickPickIndex}.\tTime: ${trace[0]}\t${trace[1]}`);
+							traceQuickPickIndex++;
+						}
+
+						vscode.window.showQuickPick(traceStringArray).then(
+							//resolve if user chooses a trace
+							(result) => {
+								let sequenceIndex = Number(result?.charAt(0));
+								//sequencing the traces
+								if (traces === undefined || sequenceIndex === undefined) {
+									throw new Error("Could not find traces.");
+								}
+								let sequenceResult = sequence(traces[sequenceIndex - 1][2]);
+								if (sequenceResult === undefined) {
+									throw new Error("Could not find sequence in trace.");
+								}
+								console.log(sequenceResult[2]); //root of tree after sequencing a trace
+
+								// level order traversal of tree to create
+								let htmlContent = createHTMLContent(sortTreeByTime(sequenceResult[2]));
+
+								//create and show a new webview
+								createWebviewPanel(htmlContent);
+
+								//create mermaid sequence diagram
+								let output = mermaid(sequenceResult[0], sequenceResult[1]);
+								console.log(output);
+
+								//end stream
+								arrOfGroupsStream.destroy();
+							}
+						).then(undefined, err => { });
+					}).then(undefined, err => { });
 				});
-
-				//create quick pick windows to display the different groups of events
-				// display the quickpick window for event group selection
-				vscode.window.showQuickPick(groupStringArray).then(
-					result => {
-						let groupEvents = undefined;
-						const regexGroupName = /(?<=\t)[\w+.-]+/;
-						if (result === undefined) {
-							throw new Error("Group not found.");
-						}
-						let groupName = regexGroupName.exec(result);
-						let arrOfGroupsStream2 = createJsonStream(tracePath);
-						arrOfGroupsStream2.on('data', (group) => {
-							if (groupName !== group.value.group) { return; }
-
-							groupEvents = group.value.events;
-						});
-						return groupEvents;
-					}
-				).then(groupEvents => {
-					if (groupEvents === undefined) {
-						throw new Error("Invalid group of Events");
-					}
-					//analysing events to find traces
-					let traces = analyse(groupEvents);
-					//display the traces of a given group
-					let traceStringArray = [];
-					let traceQuickPickIndex = 1;
-					for (let trace of traces) {
-						//create string array to display quick pick of traces
-						traceStringArray.push(`${traceQuickPickIndex}.\tTime: ${trace[0]}\t${trace[1]}`);
-						traceQuickPickIndex++;
-					}
-
-					vscode.window.showQuickPick(traceStringArray).then(
-						//resolve if user chooses a trace
-						(result) => {
-							let sequenceIndex = Number(result?.charAt(0));
-							//sequencing the traces
-							if (traces === undefined || sequenceIndex === undefined) {
-								throw new Error("Could not find traces.");
-							}
-							let sequenceResult = sequence(traces[sequenceIndex - 1][2]);
-							if (sequenceResult === undefined) {
-								throw new Error("Could not find sequence in trace.");
-							}
-							console.log(sequenceResult[2]); //root of tree after sequencing a trace
-
-							// level order traversal of tree to create
-							let htmlContent = createHTMLContent(sortTreeByTime(sequenceResult[2]));
-
-							//create and show a new webview
-							createWebviewPanel(htmlContent);
-
-							let output = mermaid(sequenceResult[0], sequenceResult[1]);
-							console.log(output);
-						}
-					).then(undefined, err => { });
-				}).then(undefined, err => { });
 			});
 	});
 
