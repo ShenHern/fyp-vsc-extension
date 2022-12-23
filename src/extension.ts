@@ -1,10 +1,13 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import fs = require('fs');
-import { analyse, mermaid, sequence } from './functions';
+import * as fs from 'fs';
+import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent } from './functions';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
+
+let currentPanel: vscode.WebviewPanel | undefined = undefined;
+
 export function activate(context: vscode.ExtensionContext) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
@@ -39,37 +42,119 @@ export function activate(context: vscode.ExtensionContext) {
 		p1.then(
 			(result) => {
 				console.log(result);
-				if (result !== undefined) {
-					vscode.window.showInformationMessage(result[0].path);
-					let tracePath = result[0].path;
-					tracePath = tracePath.substring(1);	// remove first slash from path provided by vscode API
-					let rawData = fs.readFileSync(tracePath);
-					let traceObj = JSON.parse(rawData.toString());
-					// console.log(traceObj.events);
-					for (let i = 0; i < traceObj.events.length; i++) {
-						// for (let j = 0; j < traceObj.events[i].events.length; j++) {
-						// 	// console.log(traceObj.events[i].events[j]);
-						// 	// console.log(splitComponents(traceObj.events[i].events[j]["component"]));
-						// }
-						let traces = analyse(traceObj.events[i].events);
-						// console.log(traces);
-						let sequenceResult = sequence(traces[3][2]);
-						if (sequenceResult !== undefined){
-							console.log(sequenceResult[2]);
+				if (result === undefined) {
+					throw new Error("File not found!");
+				}
+				vscode.window.showInformationMessage(result[0].path);
+				let tracePath = result[0].path;
+				tracePath = tracePath.substring(1);	// remove first slash from path provided by vscode API
+				let rawData = fs.readFileSync(tracePath);
+				let traceObj = JSON.parse(rawData.toString());
+
+				// allow user to select the desired group of events
+				let groupStringArray = [];
+				let groupQuckPickIndex = 1;
+				for (let groupOfEvents of traceObj.events) {
+					// create string array that will be used to display groups for user to select
+					groupStringArray.push(`${groupQuckPickIndex}.\t${groupOfEvents.group}`);
+					groupQuckPickIndex++;
+				}
+
+				// display the quickpick window for event group selection
+				vscode.window.showQuickPick(groupStringArray).then(
+					result => {
+						let groupIndex = Number(result?.charAt(0));
+						if (groupIndex === undefined) {
+							throw new Error("Group not found. Please select a again.");
+						}
+						return groupIndex;
+					}
+				).then(groupIndex => {
+					//analysing events to find traces
+					let traces = analyse(traceObj.events[groupIndex-1].events);
+					//display the traces of a given group
+					let traceStringArray = [];
+					let traceQuickPickIndex = 1;
+					for (let trace of traces) {
+						//create string array to display quick pick of traces
+						traceStringArray.push(`${traceQuickPickIndex}.\tTime: ${trace[0]}\t${trace[1]}`);
+						traceQuickPickIndex++;
+					}
+
+					vscode.window.showQuickPick(traceStringArray).then(
+						//resolve if user chooses a trace
+						(result) => {
+							let sequenceIndex = Number(result?.charAt(0));
+							//sequencing the traces
+							if (traces === undefined || sequenceIndex === undefined) {
+								throw new Error("Could not find traces.");
+							}
+							let sequenceResult = sequence(traces[sequenceIndex - 1][2]);
+							if (sequenceResult === undefined) {
+								throw new Error("Could not find sequence in trace.");
+							}
+							console.log(sequenceResult[2]); //root of tree after sequencing a trace
+
+							// level order traversal of tree to create
+							let htmlContent = createHTMLContent(sortTreeByTime(sequenceResult[2]));
+
+							//create and show a new webview
+							createWebviewPanel(htmlContent);
+
 							let output = mermaid(sequenceResult[0], sequenceResult[1]);
 							console.log(output);
 						}
-					}
-				}
+					).then(undefined, err => { });
+				}).then(undefined, err => { });
 			});
 	});
-
-
 
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(disposable2);
 	context.subscriptions.push(disposable3);
+
+	function createWebviewPanel(htmlContent: string) {
+		//create and show a new webview
+		const columnToShowIn = vscode.window.activeTextEditor
+			? vscode.window.activeTextEditor.viewColumn
+			: undefined;
+
+		if (currentPanel) {
+			currentPanel.reveal(columnToShowIn);
+		} else {
+			currentPanel = vscode.window.createWebviewPanel(
+				"traceVisualization",
+				"Trace Visualization",
+				columnToShowIn ? columnToShowIn : vscode.ViewColumn.One,
+				{
+					enableScripts: true,
+				}
+			);
+		}
+
+		//set the webview html content
+		currentPanel.webview.html = htmlContent;
+
+		currentPanel.webview.onDidReceiveMessage(
+			message => {
+				switch (message.command) {
+					case 'alert':
+						vscode.window.showErrorMessage(message.text);
+				}
+			},
+			undefined,
+			context.subscriptions
+		);
+
+		currentPanel.onDidDispose(
+			() => {
+				// clearInterval(interval);
+				currentPanel = undefined;
+				// clearTimeout(timeout);
+			},
+			null,
+			context.subscriptions
+		);
+	}
 }
 
-// this method is called when your extension is deactivated
-export function deactivate() { }
