@@ -3,6 +3,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent } from './functions';
+const { parser } = require('stream-json');
+const { pick } = require('stream-json/filters/Pick');
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 
@@ -48,13 +50,13 @@ export function activate(context: vscode.ExtensionContext) {
 				vscode.window.showInformationMessage(result[0].path);
 				let tracePath = result[0].path;
 				tracePath = tracePath.substring(1);	// remove first slash from path provided by vscode API
-				let rawData = fs.readFileSync(tracePath);
-				let traceObj = JSON.parse(rawData.toString());
+				const pipeline = fs.createReadStream(tracePath).pipe(parser());
+				let groupsOfEvents = pipeline.pipe(pick({filter: 'events'}));
 
 				// allow user to select the desired group of events
 				let groupStringArray = [];
 				let groupQuckPickIndex = 1;
-				for (let groupOfEvents of traceObj.events) {
+				for (let groupOfEvents of groupsOfEvents) {
 					// create string array that will be used to display groups for user to select
 					groupStringArray.push(`${groupQuckPickIndex}.\t${groupOfEvents.group}`);
 					groupQuckPickIndex++;
@@ -71,7 +73,7 @@ export function activate(context: vscode.ExtensionContext) {
 					}
 				).then(groupIndex => {
 					//analysing events to find traces
-					let traces = analyse(traceObj.events[groupIndex-1].events);
+					let traces = analyse(groupsOfEvents[groupIndex - 1].events);
 					//display the traces of a given group
 					let traceStringArray = [];
 					let traceQuickPickIndex = 1;
