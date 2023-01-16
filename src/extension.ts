@@ -55,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
 					{key: 1, value: group2}
 				*/
 
-				// stream the json file once to collate the group names
+				// stream the json file
 				arrOfGroupsStream.on('data', (group) => {
 					let groupStringArray: Array<string> = [];
 					let groupQuckPickIndex = 1;
@@ -109,10 +109,10 @@ export function activate(context: vscode.ExtensionContext) {
 								}
 								console.log(sequenceResult[2]); //root of tree after sequencing a trace
 
-								// level order traversal of tree to create
+								// level order traversal of tree to create html content
 								let htmlContent = createHTMLContent(sortTreeByTime(sequenceResult[2]));
 
-								//create and show a new webview
+								//create and show a new webview with the above html content
 								createWebviewPanel(htmlContent);
 
 								//create mermaid sequence diagram
