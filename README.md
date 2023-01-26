@@ -8,6 +8,6 @@
 
 ## Development
 
-- Run `yarn watch-build` and wait until you see green colour line
+- Run `yarn watch-build` and wait until you see "[nodemon] clean exit - waiting for changes before restart"
 - `F5` to start debugging
 - Save any file you made changes to restart `yarn watch-build` again
