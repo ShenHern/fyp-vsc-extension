@@ -1,11 +1,16 @@
 ## React app is in src folder, extension layer is in ext-src
 
+## Requirements
+
+- Run `npm install --global yarn`
+- Check yarn installed by running `yarn -version`; it should output the version
+- Run `yarn install` to install all packages
 
 ## Development
 
-- Run `yarn watch-build`
+- Run `yarn watch-build` and wait until you see green colour line
 - `F5` to start debugging
-- Once you make changes while debugging, you should restart debugging to view changes
+- Save any file you made changes to restart `yarn watch-build` again
 
 
 ## License
