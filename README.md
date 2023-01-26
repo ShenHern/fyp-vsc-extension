@@ -11,8 +11,3 @@
 - Run `yarn watch-build` and wait until you see green colour line
 - `F5` to start debugging
 - Save any file you made changes to restart `yarn watch-build` again
-
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
