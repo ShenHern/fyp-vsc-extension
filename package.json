@@ -1,8 +1,8 @@
 {
-  "name": "unettrace",
-  "displayName": "UnetTrace",
-  "description": "",
+  "name": "fyp-react-webappbuilder",
   "version": "0.0.1",
+  "displayName": "Unet Trace Visualisation",
+  "description": "",
   "engines": {
     "vscode": "^1.71.0"
   },
@@ -10,52 +10,92 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:unettrace.helloWorld",
-    "onCommand:unettrace.helloWorld2",
-    "onCommand:unettrace.trace"
+    "onCommand:fyp-react-webappbuilder.start"
   ],
-  "main": "./out/extension.js",
+  "main": "./build/ext-src/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "unettrace.helloWorld",
-        "title": "UnetTrace: Hello World!"
-      },
-      {
-        "command": "unettrace.helloWorld2",
-        "title": "UnetTrace: Hello World 2!"
-      },
-      {
-        "command": "unettrace.trace",
-        "title": "UnetTrace: Create Visualisation from Trace File"
+        "command": "fyp-react-webappbuilder.start",
+        "title": "Enable Unet Trace Visualisation",
+        "icon": {
+          "light": "./assets/unet.png",
+          "dark": "./assets/unet.png"
+        }
       }
-    ]
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "fyp-react-webappbuilder.start",
+          "when": "resourceExtname == .json || editorLangId == json",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "vscode:prepublish": "yarn run package",
+    "start": "react-scripts start",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
+    "lint": "eslint . --ext .ts,.tsx",
+    "test": "node ./out/test/runTest.js",
+    "build": "node ./scripts/build-non-split.js && tsc -p tsconfig.extension.json",
+    "watch-build": "nodemon --watch src --ext js,tsx,ts --exec \"yarn run build\"",
+    "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "@types/glob": "^8.0.0",
-    "@types/jquery": "^3.5.14",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "18.x",
-    "@types/vscode": "^1.73.1",
-    "@typescript-eslint/eslint-plugin": "^5.45.0",
-    "@typescript-eslint/parser": "^5.45.0",
-    "@vscode/test-electron": "^2.2.0",
-    "eslint": "^8.29.0",
+    "@types/glob": "^7.2.0",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "16.x",
+    "@types/react": "^18.0.20",
+    "@types/react-dom": "^18.0.6",
+    "@types/styled-components": "^5.1.26",
+    "@types/vscode": "^1.71.0",
+    "@typescript-eslint/eslint-plugin": "^5.31.0",
+    "@typescript-eslint/parser": "^5.31.0",
+    "@vscode/test-electron": "^2.1.5",
+    "eslint": "^8.20.0",
     "glob": "^8.0.3",
-    "mocha": "^10.1.0",
-    "typescript": "^4.9.3"
+    "mocha": "^10.0.0",
+    "nodemon": "^2.0.20",
+    "react-scripts": "^5.0.1",
+    "rewire": "^6.0.0",
+    "ts-loader": "^9.3.1",
+    "typescript": "^4.7.4",
+    "webpack": "^5.74.0",
+    "webpack-cli": "^4.10.0"
   },
   "dependencies": {
-    "@types/stream-json": "^1.7.2",
-    "node-fetch": "^3.3.0",
-    "stream-json": "^1.7.5"
+    "@projectstorm/react-diagrams": "^6.7.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.4.0",
+    "react-icons": "^4.4.0",
+    "react-interactive-timeline": "^0.4.0",
+    "react-linkify-it": "^1.0.7",
+    "react-zoom-pan-pinch": "^2.2.1",
+    "reactflow": "^11.4.2",
+    "reaflow": "^5.0.6",
+    "terser": "^5.15.0",
+    "yarn": "^1.22.19",
+    "zustand": "^4.1.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
