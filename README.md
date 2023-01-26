@@ -9,5 +9,5 @@
 ## Development
 
 - Run `yarn watch-build` and wait until you see "[nodemon] clean exit - waiting for changes before restart"
-- `F5` to start debugging
+- `F5` to start debugging, ctrl+shift+i to open up console for webview panel
 - Save any file you made changes to restart `yarn watch-build` again
