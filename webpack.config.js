@@ -22,6 +22,7 @@ const extensionConfig = {
   },
   resolve: {
     extensions: [".ts", ".js"],
+    fallback: { "stream": require.resolve("stream-browserify") }
   },
   module: {
     rules: [

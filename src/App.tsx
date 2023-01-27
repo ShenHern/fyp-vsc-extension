@@ -1,46 +1,29 @@
 import React, { useState } from "react";
+import { eventsArray } from "./utils/jsonParser";
+import Menu from "./utils/dropdownMenu/menu";
 import { parser } from "./utils/jsonParser";
-import { EdgeData, NodeData } from "reaflow";
-import StateHooksComponent from "./utils/canvas";
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 const App: React.FC = () => {
-  const [nodes, setNodes] = useState<NodeData[]>([]);
-  const [edges, setEdges] = useState<EdgeData[]>([]);
+  const [jsonData, setJsonData] = useState<Map<number, any>>();
+  const [dropDown, setDropdown] = useState<string[]>([]);
 
   
   window.addEventListener("message", (event) => {
     console.log("message received");
-    const jsonData = event.data.json;
-    setNodes(parser(jsonData) as NodeData[]);
+    const newJsonData = event.data.json;
+    const grpEvents = parser(newJsonData);
+    setJsonData(grpEvents)
+    setDropdown(eventsArray(newJsonData));
   });
 
-//   React.useEffect(() => {
-//     console.log("detect json useeffect");
-//     const newNode : NodeData[] = parser(jsonData) as NodeData[];
-//     console.log(newNode);
-//   }, [jsonData]);
-  // React.useEffect(() => {
-  //   console.log("useEffect called");
-  //   window.addEventListener("message", (event) => {
-  //     console.log("message received");
-  //     const newNode : NodeData[] = parser(jsonData) as NodeData[];
-  //     // setNodes(newNode);
-  //     console.log(newNode);
-  //   });
-  // });
+  React.useEffect(() => {
+    console.log(jsonData);
+  }, [jsonData]);
 
-  // React.useEffect(() => {
-  //   console.log(nodes);
-  // }, [nodes]);
 
   return (
     <div>
-      <TransformWrapper>
-      <TransformComponent>
-      <StateHooksComponent nodes={nodes} edges={edges}/>
-      </TransformComponent>
-      </TransformWrapper>
+      <Menu eventArray={dropDown} jsonData={jsonData}/>
     </div>
   );
 };

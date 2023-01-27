@@ -305,8 +305,11 @@ function updateTree(stimulus: { [header: string]: any; }, response: { [header: s
             sender: stimulus["sender"] + `/${node}`,
             recipient: stimulus["recipient"] + `/${node}`
         };
-        //update the head of TreeCache
-        cache["head"] = stim;
+
+        if (!("head" in cache)) {
+            //update the head of TreeCache
+            cache["head"] = stim;
+        }
     }
 
     if (stim.sender === stim.recipient) {
@@ -377,7 +380,7 @@ export function sortTreeByTime(root: TreeNode) {
     }
 
     // sort output list
-    outList.sort(function(a, b) {
+    outList.sort(function (a, b) {
         return a.time - b.time;
     });
 
