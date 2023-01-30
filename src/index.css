@@ -1,4 +1,17 @@
 .App {
+  text-align: center;
+}
+
+.select-class {
+  width: 50%;
+  margin: auto;
+}
+
+.canvas {
   font-family: sans-serif;
   text-align: center;
+  display: flex;
+  width: fit-content;
+  overflow: scroll;
+  margin: auto;
 }

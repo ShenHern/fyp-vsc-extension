@@ -2379,11 +2379,6 @@
     "@types/scheduler" "*"
     csstype "^3.0.2"
 
-"@types/resize-observer-browser@^0.1.6":
-  version "0.1.7"
-  resolved "https://registry.npmjs.org/@types/resize-observer-browser/-/resize-observer-browser-0.1.7.tgz"
-  integrity sha512-G9eN0Sn0ii9PWQ3Vl72jDPgeJwRWhv2Qk/nQkJuWmRmOB4HX3/BhD5SE1dZs/hzPZL/WKnvF0RHdTSG54QJFyg==
-
 "@types/resolve@1.17.1":
   version "1.17.1"
   resolved "https://registry.npmjs.org/@types/resolve/-/resolve-1.17.1.tgz"
@@ -3635,7 +3630,7 @@ classcat@^5.0.3:
   resolved "https://registry.npmjs.org/classcat/-/classcat-5.0.4.tgz"
   integrity sha512-sbpkOw6z413p+HDGcBENe498WM9woqWHiJxCq7nvmxe9WmrUmqfAcxpIwAiMtM5Q3AhYkzXcNQHqsWq0mND51g==
 
-classnames@^2.2.6, classnames@^2.3.1:
+classnames@^2.3.1:
   version "2.3.2"
   resolved "https://registry.npmjs.org/classnames/-/classnames-2.3.2.tgz"
   integrity sha512-CSbhY4cFEJRe6/GQzIk5qXZ4Jeg5pcsP7b5peFSDpffpe1cqjASH/n9UTjBwOp6XpMSTwQ8Za2K5V02ueA7Tmw==
@@ -4582,6 +4577,11 @@ ellipsize@^0.2.0:
   dependencies:
     tape "^4.9.0"
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
 elliptic@^6.5.3:
   version "6.5.4"
   resolved "https://registry.yarnpkg.com/elliptic/-/elliptic-6.5.4.tgz#da37cebd31e79a1367e941b592ed1fbebd58abbb"
@@ -4595,11 +4595,15 @@ elliptic@^6.5.3:
     minimalistic-assert "^1.0.1"
     minimalistic-crypto-utils "^1.0.1"
 
+<<<<<<< Updated upstream
 emitter-component@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/emitter-component/-/emitter-component-1.1.1.tgz#065e2dbed6959bf470679edabeaf7981d1003ab6"
   integrity sha512-G+mpdiAySMuB7kesVRLuyvYRqDmshB7ReKEVuyBPkzQlmiDiLrt7hHHIy4Aff552bgknVN7B2/d3lzhGO5dvpQ==
 
+=======
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 emittery@^0.10.2:
   version "0.10.2"
   resolved "https://registry.npmjs.org/emittery/-/emittery-0.10.2.tgz"
@@ -8717,6 +8721,11 @@ react-app-polyfill@^3.0.0:
     regenerator-runtime "^0.13.9"
     whatwg-fetch "^3.6.2"
 
+react-bidirectional-infinite-scroll@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/react-bidirectional-infinite-scroll/-/react-bidirectional-infinite-scroll-2.0.1.tgz#abda647b692414c1d212070347c802817319852a"
+  integrity sha512-2ABmUQnHlNkrDWeWffaygiep/BOaWErOVbA4Ej1k/AlsTmVrDx/HeivTw3UXDQr+o9SHow0FrzDkEExm7kHJlg==
+
 react-cool-dimensions@^2.0.7:
   version "2.0.7"
   resolved "https://registry.npmjs.org/react-cool-dimensions/-/react-cool-dimensions-2.0.7.tgz"
@@ -8782,14 +8791,6 @@ react-icons@^4.4.0:
   resolved "https://registry.npmjs.org/react-icons/-/react-icons-4.7.1.tgz"
   integrity sha512-yHd3oKGMgm7zxo3EA7H2n7vxSoiGmHk5t6Ou4bXsfcgWyhfDKMpyKfhHR6Bjnn63c+YXBLBPUql9H4wPJM6sXw==
 
-react-interactive-timeline@^0.4.0:
-  version "0.4.0"
-  resolved "https://registry.npmjs.org/react-interactive-timeline/-/react-interactive-timeline-0.4.0.tgz"
-  integrity sha512-Kv41PilHy3YRVxyN7vsaCUS9isBmVvpfbkwP8BrgdyTeAk7k8tV4IXwn21BXhUHZSK+8cmW7W7sgCvLdHUjfRQ==
-  dependencies:
-    classnames "^2.2.6"
-    react-resize-detector "^6.7.6"
-
 react-is@^16.13.1, react-is@^16.7.0:
   version "16.13.1"
   resolved "https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz"
@@ -8814,15 +8815,6 @@ react-refresh@^0.11.0:
   version "0.11.0"
   resolved "https://registry.npmjs.org/react-refresh/-/react-refresh-0.11.0.tgz"
   integrity sha512-F27qZr8uUqwhWZboondsPx8tnC3Ct3SxZA3V5WyEvujRyyNv0VYPhoBg1gZ8/MV5tubQp76Trw8lTv9hzRBa+A==
-
-react-resize-detector@^6.7.6:
-  version "6.7.8"
-  resolved "https://registry.npmjs.org/react-resize-detector/-/react-resize-detector-6.7.8.tgz"
-  integrity sha512-0FaEcUBAbn+pq3PT5a9hHRebUfuS1SRLGLpIw8LydU7zX429I6XJgKerKAMPsJH0qWAl6o5bVKNqFJqr6tGPYw==
-  dependencies:
-    "@types/resize-observer-browser" "^0.1.6"
-    lodash "^4.17.21"
-    resize-observer-polyfill "^1.5.1"
 
 react-scripts@^5.0.1:
   version "5.0.1"
@@ -9099,11 +9091,6 @@ requires-port@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/requires-port/-/requires-port-1.0.0.tgz"
   integrity sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ==
-
-resize-observer-polyfill@^1.5.1:
-  version "1.5.1"
-  resolved "https://registry.npmjs.org/resize-observer-polyfill/-/resize-observer-polyfill-1.5.1.tgz"
-  integrity sha512-LwZrotdHOo12nQuZlHEmtuXdqGoOD0OhaxopaNFxWzInpEgaLWoVuAMbTzixuosCx2nEG58ngzW3vxdWoxIgdg==
 
 resolve-cwd@^3.0.0:
   version "3.0.0"
@@ -9621,6 +9608,11 @@ stop-iteration-iterator@^1.0.0:
   dependencies:
     internal-slot "^1.0.4"
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
 stream-browserify@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/stream-browserify/-/stream-browserify-3.0.0.tgz"
@@ -9629,11 +9621,14 @@ stream-browserify@^3.0.0:
     inherits "~2.0.4"
     readable-stream "^3.5.0"
 
+<<<<<<< Updated upstream
 stream-chain@^2.2.5:
   version "2.2.5"
   resolved "https://registry.npmjs.org/stream-chain/-/stream-chain-2.2.5.tgz"
   integrity sha512-1TJmBx6aSWqZ4tx7aTpBDXK0/e2hhcNSTV8+CbFJtDjbb+I1mZ8lHit0Grw9GRT+6JbIrrDd8esncgBi8aBXGA==
 
+=======
+>>>>>>> Stashed changes
 stream-http@^3.2.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/stream-http/-/stream-http-3.2.0.tgz#1872dfcf24cb15752677e40e5c3f9cc1926028b5"
@@ -9644,6 +9639,7 @@ stream-http@^3.2.0:
     readable-stream "^3.6.0"
     xtend "^4.0.2"
 
+<<<<<<< Updated upstream
 stream-json@^1.7.5:
   version "1.7.5"
   resolved "https://registry.npmjs.org/stream-json/-/stream-json-1.7.5.tgz"
@@ -9658,6 +9654,9 @@ stream@^0.0.2:
   dependencies:
     emitter-component "^1.1.1"
 
+=======
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 string-length@^4.0.1:
   version "4.0.2"
   resolved "https://registry.npmjs.org/string-length/-/string-length-4.0.2.tgz"

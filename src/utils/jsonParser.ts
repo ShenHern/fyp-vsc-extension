@@ -1,4 +1,4 @@
-import { NodeData } from "reaflow";
+import { EdgeData, NodeData } from "reaflow";
 import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent } from './functions';
 import { TreeCache, TreeNode } from "./types";
 
@@ -24,23 +24,21 @@ export const parser = (jsonStr: string) => {
   return groupMap;
 };
 
-export const format = (json: Array<{ [header: string]: any }>) => {
-  try {
-    if (json !== undefined) {
-      const traces = analyse(json);
-      const sequenceResult = sequence(traces[3][2]);
-      if (sequenceResult === undefined) {
-        throw new Error("Could not find sequence in trace.");
-      }
-      // console.log(sequenceResult[2]); //root of tree after sequencing a trace
-      const output = sortTreeByTime(sequenceResult[2]);
-      return nodeFormat(output);
-    }
+export const format = (traces: any) => {
+  const sequenceResult = sequence(traces);
+  if (sequenceResult === undefined) {
+    throw new Error("Could not find sequence in trace.");
   }
-  catch {
-    return "Could not process trace";
-  }
+  // console.log(sequenceResult[2]); //root of tree after sequencing a trace
+  const output = sortTreeByTime(sequenceResult[2]);
+  // return nodeFormat(output);
+  return nodeFormat(output);
 };
+
+export const analyseTrace = (json: any, selectedSim: number) => {
+  const traces = analyse(json.get(selectedSim).events);
+  return(traces);
+}
 
 export const eventsArray = (jsonStr: string) => {
   const json = JSON.parse(jsonStr);
@@ -51,7 +49,7 @@ export const eventsArray = (jsonStr: string) => {
   return eventArray;
 };
 
-export function nodeFormat(output : TreeNode[]) {
+function nodeFormat(output : TreeNode[]) {
 
   console.log(output);
   const nodes : NodeData[] = [];
@@ -64,4 +62,18 @@ export function nodeFormat(output : TreeNode[]) {
     nodes.push(currNode);
   }
   return nodes;
+}
+
+export function edgeFormat(nodes : NodeData[]) {
+  const edges : EdgeData[] = [];
+
+  for(let i = 0; i < nodes.length-1; i++) {
+    const currEdge = {
+      id: `${nodes[i].id}+${nodes[i+1].id}`,
+      from: `${nodes[i].id}`,
+      to: `${nodes[i+1].id}`
+    };
+    edges.push(currEdge);
+  }
+  return(edges);
 }
