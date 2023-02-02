@@ -1,0 +1,6 @@
+{"version": "1.0","group":"EventTrace","events":[
+    {"group":"SIMULATION 1","events":[
+        {"time":1674640479968,"component":"uwlink::org.arl.unet.link.ReliableLink/A","threadID":"bad28674-a8fa-4b90-b5fb-c6896a1b6845","stimulus":{"clazz":"org.arl.unet.DatagramReq","messageID":"bad28674-a8fa-4b90-b5fb-c6896a1b6845","performative":"REQUEST","sender":"router","recipient":"uwlink"},"response":{"clazz":"org.arl.unet.phy.TxFrameReq","messageID":"9679e2db-fa63-4e98-93eb-5b13554aaffe","performative":"REQUEST","recipient":"phy"}},
+        {"time":1674640481041,"component":"uwlink::org.arl.unet.link.ReliableLink/B","threadID":"12995b36-b42d-4277-bd2d-9936ee4a2d29","stimulus":{"clazz":"org.arl.unet.phy.RxFrameNtf","messageID":"12995b36-b42d-4277-bd2d-9936ee4a2d29","performative":"INFORM","sender":"phy","recipient":"#phy__ntf"},"response":{"clazz":"org.arl.unet.phy.TxFrameReq","messageID":"6836fc75-4cf2-4938-b740-d7187a856904","performative":"REQUEST","recipient":"phy"}}      
+     ]}
+     ]}
