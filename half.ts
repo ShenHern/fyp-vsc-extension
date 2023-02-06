@@ -1,5 +1,5 @@
 const fs = require('fs');
-const test = './tests/test.json';
+const testPath = './tests/test1.json';
 
 function makeid(length) {
     let result = '';
@@ -21,7 +21,7 @@ let rxnotif = {"time":[],"component":"","threadID":"","stimulus":{"clazz":"","me
 const half = () => {
     //const files = './tests/test.json';
     //let obj = JSON.parse(files);
-    let file = fs.readFileSync(test);
+    let file = fs.readFileSync(testPath);
     let obj = JSON.parse(file);
     const events = obj.events[0].events;
     const length = events.length;
@@ -92,5 +92,5 @@ const half = () => {
     obj.events[0].events = events;
     fs.writeFileSync('./trial.json', JSON.stringify(obj,null,4));
     console.log(obj);
-}
+};
 half();
