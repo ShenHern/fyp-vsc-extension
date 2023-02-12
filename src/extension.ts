@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent, createJsonStream } from './functions';
+import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent, createJsonStream, extractRxToDataframe, extractTxToDataframe } from './functions';
 import { trace } from 'console';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -24,10 +24,60 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('Hello World from VSCode!');
 	});
 
-	let disposable2 = vscode.commands.registerCommand('unettrace.helloWorld2', () => {
+	let disposable2 = vscode.commands.registerCommand('unettrace.solve', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		vscode.window.showWarningMessage('Hello World 2!');
+
+		//TODO: open two files and run tx-rx matching for nodes AB then swap and run tx-rx for BA
+		//return the matched threaIDs
+		let ws = vscode.workspace.workspaceFolders;
+		let rootPathStr = ".";
+		if (ws) {
+			rootPathStr = ws[0].toString();
+		}
+		let od: vscode.OpenDialogOptions = { canSelectFiles: true, canSelectFolders: false, defaultUri: vscode.Uri.file(rootPathStr), filters: { "json": ["json"] } };
+		let p1 = vscode.window.showOpenDialog(od);
+		p1.then((result) => {
+			console.log(result);
+			if (result === undefined) {
+				throw new Error("File not found!");
+			}
+			vscode.window.showInformationMessage(result[0].path);
+			let tracePath = result[0].path;
+			tracePath = tracePath.substring(1);	// remove first slash from path provided by vscode API
+			let arrOfGroupsStream = createJsonStream(tracePath);
+			/* arrOfGroups looks like this:
+				{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
+				{key: 1, value: group2}
+			*/
+			let groupQuckPickIndex = 1;
+			// stream the json file
+			arrOfGroupsStream.on('data', (group) => {
+				let groupStringArray: Array<string> = [];
+				// create string array that will be used to display groups for user to select
+				groupStringArray.push(`${groupQuckPickIndex}.\t${group.value.group}`);
+				groupStringArray.push("Go to Next Group");
+				arrOfGroupsStream.pause();
+
+				//create quick pick windows to display the different groups of events
+				// display the quickpick window for event group selection
+				vscode.window.showQuickPick(groupStringArray).then(
+					result => {
+						if (result === undefined) {
+							return result;
+						}
+						if (result === "Go to Next Group") {
+							return result;
+						} else {
+							return group.value.events;
+						}
+					}
+				).then(groupEvents => {
+					let txA = extractTxToDataframe(groupEvents);
+					let rxA = extractRxToDataframe(groupEvents);
+				});
+			});
+		});
 	});
 
 	let disposable3 = vscode.commands.registerCommand('unettrace.trace', () => {
@@ -54,11 +104,10 @@ export function activate(context: vscode.ExtensionContext) {
 					{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
 					{key: 1, value: group2}
 				*/
-
+				let groupQuckPickIndex = 1;
 				// stream the json file
 				arrOfGroupsStream.on('data', (group) => {
 					let groupStringArray: Array<string> = [];
-					let groupQuckPickIndex = 1;
 					// create string array that will be used to display groups for user to select
 					groupStringArray.push(`${groupQuckPickIndex}.\t${group.value.group}`);
 					groupStringArray.push("Go to Next Group");
@@ -81,6 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
 						if (groupEvents === undefined) {
 							throw new Error("Invalid group of Events");
 						} else if (groupEvents === "Go to Next Group") {
+							groupQuckPickIndex++;
 							arrOfGroupsStream.resume();
 							return;
 						}

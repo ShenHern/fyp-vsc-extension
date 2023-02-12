@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { parser } from 'stream-json';
 import { pick } from 'stream-json/filters/Pick';
 import { streamArray } from 'stream-json/streamers/StreamArray';
+import StreamArray = require("stream-json/streamers/StreamArray");
 
 /**
  * A function to split the component into useful parts.
@@ -608,3 +609,65 @@ export function createJsonStream(tracePath: string) {
     let arrOfGroupsStream = groupsOfEvents.pipe(streamArray());
     return arrOfGroupsStream;
 }
+
+/**
+ * function that extracts out tx events from a node, e.g. node A.
+ * @param groupEvents group of events from trace.json file
+ * @returns 2d array containing all tx events from a unet node, e.g., [[txID1, timing1], [txID2, timing2]]
+ */
+export function extractTxToDataframe(groupEvents: any) {
+    let txDataframe: any[][] = [];
+    groupEvents.forEach((event: any) => {
+        //for each event; where event is {time, component, stimulus, response}
+        if ("response" in event) {
+            let response = event["response"];
+            if (response.clazz === "org.arl.unet.phy.TxFrameReq") {
+                //extract out the ID and timing
+                let txID = response.messageID;
+                let time = event["time"];
+                let pair = [txID, time]; //pair of ID and time
+                txDataframe.push(pair);
+            }
+        }
+    });
+    console.log(txDataframe);
+    return txDataframe;
+}
+
+/**
+ * function that extracts out rx events from a node, e.g. node A.
+ * @param groupEvents group of events from trace.json file
+ * @returns 2d array containing all rx events from a unet node, e.g., [[rxID1, timing1], [rxID2, timing2]]
+ */
+export function extractRxToDataframe(groupEvents: any) {
+    let rxDataframe: any[][] = [];
+    groupEvents.forEach((event: any) => {
+        //for each event; where event is {time, component, stimulus, response}
+        if ("stimulus" in event) {
+            let stimulus = event["stimulus"];
+            if (stimulus.clazz === "org.arl.unet.phy.RxFrameNtf") {
+                //extract out the ID and timing
+                let rxID = stimulus.messageID;
+                let time = event["time"];
+                let pair = [rxID, time]; //pair of ID and time
+                rxDataframe.push(pair);
+            }
+        }
+    });
+    console.log(rxDataframe);
+    return rxDataframe;
+}
+
+// function noDupes(data: any[][]) {
+//     data
+//         .map(function (item) {
+//             return JSON.stringify(item);
+//         })
+//         .reduce(function (out, current) {
+//             if (out.indexOf(current) === -1) {out.push(current);}
+//             return out;
+//         }, [])
+//         .map(function (item) {
+//             return JSON.parse(item);
+//         });
+// }

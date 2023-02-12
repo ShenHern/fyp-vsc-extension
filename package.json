@@ -10,9 +10,6 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:unettrace.helloWorld",
-    "onCommand:unettrace.helloWorld2",
-    "onCommand:unettrace.trace"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -22,8 +19,8 @@
         "title": "UnetTrace: Hello World!"
       },
       {
-        "command": "unettrace.helloWorld2",
-        "title": "UnetTrace: Hello World 2!"
+        "command": "unettrace.solve",
+        "title": "UnetTrace: Solve Tx-Rx"
       },
       {
         "command": "unettrace.trace",

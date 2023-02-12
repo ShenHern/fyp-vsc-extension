@@ -1,0 +1,7 @@
+{"version": "1.0","group":"EventTrace","events":[
+    {"group":"SIMULATION 1","events":[
+     {"time":1664194423707,"component":"ranging::org.arl.unet.localization.Ranging/B","threadID":"f0e90bce-60a5-44b5-82bb-a1d6cd8585ec","stimulus":{"clazz":"org.arl.unet.phy.RxFrameNtf","messageID":"f0e90bce-60a5-44b5-82bb-a1d6cd8585ec","performative":"INFORM","sender":"phy","recipient":"#phy__ntf"},"response":{"clazz":"org.arl.unet.localization.InterrogationNtf","messageID":"3704a253-0c5d-45bd-af7a-d7acf248d236","performative":"INFORM","recipient":"#ranging__ntf"}},
+     {"time":1664194423709,"component":"ranging::org.arl.unet.localization.Ranging/B","threadID":"f0e90bce-60a5-44b5-82bb-a1d6cd8585ec","stimulus":{"clazz":"org.arl.unet.phy.RxFrameNtf","messageID":"f0e90bce-60a5-44b5-82bb-a1d6cd8585ec","performative":"INFORM","sender":"phy","recipient":"#phy__ntf"},"response":{"clazz":"org.arl.unet.ClearReq","messageID":"c282b24a-cb70-4343-8cb1-78e56535695e","performative":"REQUEST","recipient":"phy"}},
+     {"time":1664194423714,"component":"ranging::org.arl.unet.localization.Ranging/B","threadID":"f0e90bce-60a5-44b5-82bb-a1d6cd8585ec","stimulus":{"clazz":"org.arl.unet.phy.RxFrameNtf","messageID":"f0e90bce-60a5-44b5-82bb-a1d6cd8585ec","performative":"INFORM","sender":"phy","recipient":"#phy__ntf"},"response":{"clazz":"org.arl.unet.phy.TxFrameReq","messageID":"3048147e-ec96-496a-9c72-eb425ccaff1f","performative":"REQUEST","recipient":"phy"}}
+    ]}
+]}
