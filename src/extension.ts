@@ -35,7 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (ws) {
 			rootPathStr = ws[0].toString();
 		}
-		let od: vscode.OpenDialogOptions = { canSelectFiles: true, canSelectFolders: false, defaultUri: vscode.Uri.file(rootPathStr), filters: { "json": ["json"] } };
+		let od: vscode.OpenDialogOptions = { canSelectFiles: true, canSelectMany: true, canSelectFolders: false, defaultUri: vscode.Uri.file(rootPathStr), filters: { "json": ["json"] } };
 		let p1 = vscode.window.showOpenDialog(od);
 		p1.then((result) => {
 			console.log(result);
@@ -43,9 +43,9 @@ export function activate(context: vscode.ExtensionContext) {
 				throw new Error("File not found!");
 			}
 			vscode.window.showInformationMessage(result[0].path);
-			let tracePath = result[0].path;
-			tracePath = tracePath.substring(1);	// remove first slash from path provided by vscode API
-			let arrOfGroupsStream = createJsonStream(tracePath);
+			let tracePathA = result[0].path;
+			tracePathA = tracePathA.substring(1);	// remove first slash from path provided by vscode API
+			let arrOfGroupsStream = createJsonStream(tracePathA);
 			/* arrOfGroups looks like this:
 				{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
 				{key: 1, value: group2}
@@ -75,8 +75,96 @@ export function activate(context: vscode.ExtensionContext) {
 				).then(groupEvents => {
 					let txA = extractTxToDataframe(groupEvents);
 					let rxA = extractRxToDataframe(groupEvents);
+					//TODO: save txA and rxA to json file or sth
+				}).then(() => {
+					let tracePathB = result[1].path;
+					tracePathB = tracePathB.substring(1);
+					let arrOfGroupsStreamB = createJsonStream(tracePathB);
+					/* arrOfGroups looks like this:
+						{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
+						{key: 1, value: group2}
+					*/
+					let groupQuckPickIndexB = 1;
+					// stream the json file
+					arrOfGroupsStreamB.on('data', (group) => {
+						let groupStringArray: Array<string> = [];
+						// create string array that will be used to display groups for user to select
+						groupStringArray.push(`${groupQuckPickIndexB}.\t${group.value.group}`);
+						groupStringArray.push("Go to Next Group");
+						arrOfGroupsStreamB.pause();
+
+						//create quick pick windows to display the different groups of events
+						// display the quickpick window for event group selection
+						vscode.window.showQuickPick(groupStringArray).then(
+							result => {
+								if (result === undefined) {
+									return result;
+								}
+								if (result === "Go to Next Group") {
+									return result;
+								} else {
+									return group.value.events;
+								}
+							}
+						).then(groupEvents => {
+							if (groupEvents === undefined) {
+								throw new Error("Invalid group of Events");
+							} else if (groupEvents === "Go to Next Group") {
+								groupQuckPickIndexB++;
+								arrOfGroupsStreamB.resume();
+								return;
+							}
+							let txB = extractTxToDataframe(groupEvents);
+							let rxB = extractRxToDataframe(groupEvents);
+							arrOfGroupsStreamB.destroy();
+						});
+					});
 				});
 			});
+
+			// let tracePathB = result[1].path;
+			// tracePathB = tracePathB.substring(1);
+			// let arrOfGroupsStreamB = createJsonStream(tracePathB);
+			// /* arrOfGroups looks like this:
+			// 	{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
+			// 	{key: 1, value: group2}
+			// */
+			// let groupQuckPickIndexB = 1;
+			// // stream the json file
+			// arrOfGroupsStreamB.on('data', (group) => {
+			// 	let groupStringArray: Array<string> = [];
+			// 	// create string array that will be used to display groups for user to select
+			// 	groupStringArray.push(`${groupQuckPickIndexB}.\t${group.value.group}`);
+			// 	groupStringArray.push("Go to Next Group");
+			// 	arrOfGroupsStreamB.pause();
+
+			// 	//create quick pick windows to display the different groups of events
+			// 	// display the quickpick window for event group selection
+			// 	vscode.window.showQuickPick(groupStringArray).then(
+			// 		result => {
+			// 			if (result === undefined) {
+			// 				return result;
+			// 			}
+			// 			if (result === "Go to Next Group") {
+			// 				return result;
+			// 			} else {
+			// 				return group.value.events;
+			// 			}
+			// 		}
+			// 	).then(groupEvents => {
+			// 		if (groupEvents === undefined) {
+			// 			throw new Error("Invalid group of Events");
+			// 		} else if (groupEvents === "Go to Next Group") {
+			// 			groupQuckPickIndexB++;
+			// 			arrOfGroupsStreamB.resume();
+			// 			return;
+			// 		}
+			// 		let txB = extractTxToDataframe(groupEvents);
+			// 		let rxB = extractRxToDataframe(groupEvents);
+			// 		arrOfGroupsStreamB.destroy();
+			// 	});
+			// });
+
 		});
 	});
 

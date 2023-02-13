@@ -9,8 +9,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-  ],
+  "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -53,6 +52,7 @@
   "dependencies": {
     "@types/stream-json": "^1.7.2",
     "node-fetch": "^3.3.0",
-    "stream-json": "^1.7.5"
+    "stream-json": "^1.7.5",
+    "ts-gaussian": "^3.0.2"
   }
 }
