@@ -26,13 +26,17 @@ export const parser = (jsonStr: string) => {
 
 export const format = (traces: any) => {
   const sequenceResult = sequence(traces);
+  const actors = sequenceResult[0];
   if (sequenceResult === undefined) {
     throw new Error("Could not find sequence in trace.");
   }
   // console.log(sequenceResult[2]); //root of tree after sequencing a trace
   const output = sortTreeByTime(sequenceResult[2]);
   // return nodeFormat(output);
-  return nodeFormat(output);
+  const result : Array<any>[] = [];
+  result.push(actors);
+  result.push(output);
+  return result;
 };
 
 export const analyseTrace = (json: any, selectedSim: number) => {

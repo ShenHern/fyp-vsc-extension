@@ -1,0 +1,10 @@
+.body { 
+    display: flex; 
+    overflow: scroll; 
+    width: 100%; 
+  } 
+ 
+.select { 
+    font-family: sans-serif; 
+    text-align: center; 
+}

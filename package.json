@@ -74,8 +74,11 @@
   },
   "dependencies": {
     "@projectstorm/react-diagrams": "^6.7.4",
+    "@types/react-cytoscapejs": "^1.2.2",
+    "cytoscape-edge-connections": "^0.4.2",
     "node-polyfill-webpack-plugin": "^2.0.1",
     "react": "^18.2.0",
+    "react-cytoscapejs": "^2.0.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.0",
     "react-icons": "^4.4.0",
