@@ -4,7 +4,7 @@
 
 - Run `npm install --global yarn`
 - Check yarn installed by running `yarn -version`; it should output the version
-- Run `yarn install` or `npm install` to install all packages
+- Run `npm install` to install all packages
 
 ## Development
 
