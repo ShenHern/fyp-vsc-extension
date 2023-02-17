@@ -178,6 +178,8 @@ const App: React.FC = () => {
         stylesheet={CytoscapeStylesheet}
         cy={(cy): void => {
           cyRef.current = cy;
+          cy.fit();
+          // cy.zoom(0.7); 
         }}
         />
       </div>
