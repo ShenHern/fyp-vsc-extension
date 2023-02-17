@@ -8,7 +8,7 @@ import Cytoscape from "cytoscape";
 import { SidePane } from "react-side-pane";
 import Component from "./utils/sidepanel";
 import { CytoscapeStylesheet, sidePanelOptions } from "./utils/stylingOptions";
-const _ = require('lodash');
+
 const App: React.FC = () => {
 
   const [open, dispatchOpen] = useReducer((prev) => !prev, false);
