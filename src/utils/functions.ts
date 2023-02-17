@@ -1,6 +1,12 @@
 /* eslint-disable no-useless-escape */
+/* eslint-disable prefer-const */
 import { TreeCache, TreeNode } from "./types";
 import { Queue } from "./classes/Queue";
+import * as fs from 'fs';
+// import { parser } from 'stream-json';
+// import { pick } from 'stream-json/filters/Pick';
+// import { streamArray } from 'stream-json/streamers/StreamArray';
+// import { Gaussian } from 'ts-gaussian';
 
 /**
  * A function to split the component into useful parts.
@@ -12,17 +18,17 @@ function splitComponents(s: string) {
     const regexClazz = /[^\.]*(?=\/)/;
     const regexNode = /[^\/]*$/;
 
-    const regName = regexName.exec(s);
+    let regName = regexName.exec(s);
     let compName = "";
     if (regName) {
         compName = regName[0];
     }
-    const regClazz = regexClazz.exec(s);
+    let regClazz = regexClazz.exec(s);
     let compClazz = "";
     if (regClazz) {
         compClazz = regClazz[0];
     }
-    const regNode = regexNode.exec(s);
+    let regNode = regexNode.exec(s);
     let compNode = "";
     if (regNode) {
         compNode = regNode[0];
@@ -39,13 +45,13 @@ function splitComponents(s: string) {
  */
 function findTrace(cache: { [id: string]: number; }, eventRow: { [x: string]: any; }) {
     if ("threadID" in eventRow) {
-        const id: string = eventRow["threadID"];
+        let id: string = eventRow["threadID"];
         if (id in cache) {
             return cache[id];
         }
     }
     if ("stimulus" in eventRow) {
-        const id: string = eventRow["stimulus"]["messageID"];
+        let id: string = eventRow["stimulus"]["messageID"];
         if (id in cache) {
             return cache[id];
         }
@@ -61,15 +67,15 @@ function findTrace(cache: { [id: string]: number; }, eventRow: { [x: string]: an
  */
 function addToCache(cache: { [id: string]: number; }, eventRow: { [x: string]: any; }, traceID: number) {
     if ("threadID" in eventRow) {
-        const id: string = eventRow["threadID"];
+        let id: string = eventRow["threadID"];
         cache[id] = traceID;
     }
     if ("stimulus" in eventRow) {
-        const id: string = eventRow["stimulus"]["messageID"];
+        let id: string = eventRow["stimulus"]["messageID"];
         cache[id] = traceID;
     }
     if ("response" in eventRow) {
-        const id: string = eventRow["response"]["messageID"];
+        let id: string = eventRow["response"]["messageID"];
         cache[id] = traceID;
     }
 }
@@ -81,7 +87,7 @@ function addToCache(cache: { [id: string]: number; }, eventRow: { [x: string]: a
  */
 function prettyMessage(msg: { [header: string]: string; }) {
     let clazz = msg["clazz"];
-    const p = clazz.lastIndexOf(".");
+    let p = clazz.lastIndexOf(".");
     if (p !== -1) {
         //get the last clazz after the last '.'
         clazz = clazz.substring(p + 1);
@@ -104,14 +110,14 @@ function prettyMessage(msg: { [header: string]: string; }) {
  * @returns list of tuples of size equal to number of traces e.g. [(time, desc, traceOfEvents), ...]
  */
 export function analyse(events: Array<{ [header: string]: any }>) {
-    const traces: Array<[number, string, Array<{ [header: string]: any }>]> = [];
-    const cache: { [id: string]: number; } = {};
+    let traces: Array<[number, string, Array<{ [header: string]: any }>]> = [];
+    let cache: { [id: string]: number; } = {};
     for (let i = 0; i < events.length; i++) {
-        const eventRow = events[i];
+        let eventRow = events[i];
         let traceID = findTrace(cache, eventRow);
         if (traceID === undefined) {
-            const compArray = splitComponents(eventRow["component"]);
-            const cname = compArray[0];
+            let compArray = splitComponents(eventRow["component"]);
+            let cname = compArray[0];
             let cnode = compArray[2];
             if (cnode !== "") {
                 cnode = `[${cnode}]`;
@@ -154,9 +160,9 @@ function capture(actors: Array<[string, string]>, msgs: Array<[number, string, s
         recipient = agent;
     }
     let originNode = node;
-    const originKey = msg["messageID"] + "->" + recipient;
+    let originKey = msg["messageID"] + "->" + recipient;
     if (originKey in origin) {
-        const n = origin[originKey];
+        let n = origin[originKey];
         if (originNode === n) { return; }
         originNode = n;
     }
@@ -173,7 +179,7 @@ function capture(actors: Array<[string, string]>, msgs: Array<[number, string, s
     if (clazz === "org.arl.fjage.Message") {
         clazz = msg["performative"];
     } else {
-        const p = clazz.lastIndexOf('.');
+        let p = clazz.lastIndexOf('.');
         if (p !== -1) {
             //get the last clazz after the last '.'
             clazz = clazz.substring(p + 1);
@@ -193,14 +199,14 @@ function capture(actors: Array<[string, string]>, msgs: Array<[number, string, s
  * @returns a triple containing: (i) a list of unique sorted actors, (ii) a list of sequenced messages, (iii) the root node from the tree of events
  */
 export function sequence(events: Array<{ [header: string]: any }>): [Array<[string, string]>, Array<[number, string, string, string]>, TreeNode] {
-    const actors: Array<[string, string]> = [];
-    const msgs: Array<[number, string, string, string]> = [];
-    const origin: { [trf: string]: string; } = {};
-    const treeCache: TreeCache = {};
+    let actors: Array<[string, string]> = [];
+    let msgs: Array<[number, string, string, string]> = [];
+    let origin: { [trf: string]: string; } = {};
+    let treeCache: TreeCache = {};
     for (let i = 0; i < events.length; i++) {
-        const compArray = splitComponents(events[i]["component"]);
-        const cname = compArray[0];
-        const cnode = compArray[2];
+        let compArray = splitComponents(events[i]["component"]);
+        let cname = compArray[0];
+        let cnode = compArray[2];
 
         if ("stimulus" in events[i]) {
             capture(actors, msgs, origin, cnode, cname, events[i]["time"], events[i]["stimulus"], true);
@@ -213,11 +219,11 @@ export function sequence(events: Array<{ [header: string]: any }>): [Array<[stri
 
     actors.sort(sortFunction);
     // getting the unique actors
-    const d: { [x: string]: any } = {};
-    const out : [string, string][] = [];
+    let d: { [x: string]: any } = {};
+    let out = [] as any[];
     for (let i = 0; i < actors.length; i++) {
-        const item = actors[i];
-        const rep = item.toString();
+        let item = actors[i];
+        let rep = item.toString();
 
         if (!d[rep]) {
             d[rep] = true;
@@ -246,14 +252,14 @@ export function mermaid(actors: Array<[string, string]>, msgs: Array<[number, st
     let output = "";
     output += "sequenceDiagram\n";
     for (let i = 0; i < actors.length; i++) {
-        const a = actors[i];
-        const id = a[1].replace('/', '_');
+        let a = actors[i];
+        let id = a[1].replace('/', '_');
         output += `  participant ${id} as ${a[1]}\n`;
     }
     for (let j = 0; j < msgs.length; j++) {
-        const msg = msgs[j];
-        const id1 = msg[2].replace('/', '_');
-        const id2 = msg[3].replace('/', '_');
+        let msg = msgs[j];
+        let id1 = msg[2].replace('/', '_');
+        let id2 = msg[3].replace('/', '_');
         output += `  ${id1}`;
         if (msg[1] === "AGREE") { output += '-'; }
         output += `->>${id2}: ${(msg[1])}\n`;
@@ -291,7 +297,7 @@ function updateTree(stimulus: { [header: string]: any; }, response: { [header: s
     if (stim === undefined) {
         //create the stimulus object
         let stimClazz = stimulus["clazz"];
-        const p = stimClazz.lastIndexOf('.');
+        let p = stimClazz.lastIndexOf('.');
         if (p !== -1) {
             //get the last clazz after the last '.'
             stimClazz = stimClazz.substring(p + 1);
@@ -326,7 +332,7 @@ function updateTree(stimulus: { [header: string]: any; }, response: { [header: s
     if (clazz === "org.arl.fjage.Message") {
         clazz = response["performative"];
     } else {
-        const p = clazz.lastIndexOf('.');
+        let p = clazz.lastIndexOf('.');
         if (p !== -1) {
             //get the last clazz after the last '.'
             clazz = clazz.substring(p + 1);
@@ -337,7 +343,7 @@ function updateTree(stimulus: { [header: string]: any; }, response: { [header: s
         respSender = response.sender;
     }
     //build the response TreeNode object
-    const resp: TreeNode = {
+    let resp: TreeNode = {
         id: response['messageID'],
         parent: {},
         children: {},
@@ -365,8 +371,8 @@ function updateTree(stimulus: { [header: string]: any; }, response: { [header: s
 export function sortTreeByTime(root: TreeNode) {
 
     let current = root;
-    const queue = new Queue<TreeNode>();
-    const outList: TreeNode[] = [];
+    let queue = new Queue<TreeNode>();
+    let outList: TreeNode[] = [];
     queue.push(current);
     while (!queue.isEmpty()) {
         current = queue.pop();
@@ -374,7 +380,7 @@ export function sortTreeByTime(root: TreeNode) {
         outList.push(current);
 
         // add any children of current node to queue
-        for (const child in current.children) {
+        for (let child in current.children) {
             queue.push(current.children[child]);
         }
     }
@@ -543,14 +549,14 @@ export function createHTMLContent(events: Array<TreeNode>) {
     let currentContainer = "container left";
 
     //create html content for each node in events (sorted by time)
-    for (const node of events) {
+    for (let node of events) {
         htmlContent += `<div class="${currentContainer}">
 		<div id="${node.id}" class="content">
 		  <h2>Time: ${node.time}</h2>
 		  <p>
             id: ${node.id}<br><br>`;    //adding id to event container
 
-        const parentID = Object.keys(node.parent); //each node aside from root should have 1 parent
+        let parentID = Object.keys(node.parent); //each node aside from root should have 1 parent
         //adding parent to event container if exists
         if (parentID.length > 0) {
             htmlContent += `parent: <a href="#${parentID[0]}">${parentID[0]}</a><br><br>`;
@@ -558,11 +564,11 @@ export function createHTMLContent(events: Array<TreeNode>) {
             htmlContent += `parent: No Parent<br><br>`;
         }
 
-        const childrenIDs = Object.keys(node.children);   //getting the children IDs from a particular event
+        let childrenIDs = Object.keys(node.children);   //getting the children IDs from a particular event
         //adding children to event container if it exists
         htmlContent += `children: `;
         if (childrenIDs.length > 0) {
-            for (const child of childrenIDs) {
+            for (let child of childrenIDs) {
                 htmlContent += `<a href="#${child}">${child}</a>,<br><br>`;
             }
         } else {
@@ -598,3 +604,72 @@ export function createHTMLContent(events: Array<TreeNode>) {
 
     return htmlContent;
 }
+
+// export function createJsonStream(tracePath: string) {
+//     const pipeline = fs.createReadStream(tracePath).pipe(parser());
+//     let groupsOfEvents = pipeline.pipe(pick({ filter: 'events' }));
+//     let arrOfGroupsStream = groupsOfEvents.pipe(streamArray());
+//     return arrOfGroupsStream;
+// }
+
+/**
+ * function that extracts out tx events from a node, e.g. node A.
+ * @param groupEvents group of events from trace.json file
+ * @returns 2d array containing all tx events from a unet node, e.g., [[txID1, timing1], [txID2, timing2]]
+ */
+export function extractTxToDataframe(groupEvents: any) {
+    let txDataframe: any[][] = [];
+    groupEvents.forEach((event: any) => {
+        //for each event; where event is {time, component, stimulus, response}
+        if ("response" in event) {
+            let response = event["response"];
+            if (response.clazz === "org.arl.unet.phy.TxFrameReq") {
+                //extract out the ID and timing
+                let txID = response.messageID;
+                let time = event["time"];
+                let pair = [txID, time]; //pair of ID and time
+                txDataframe.push(pair);
+            }
+        }
+    });
+    console.log(txDataframe);
+    return txDataframe;
+}
+
+/**
+ * function that extracts out rx events from a node, e.g. node A.
+ * @param groupEvents group of events from trace.json file
+ * @returns 2d array containing all rx events from a unet node, e.g., [[rxID1, timing1], [rxID2, timing2]]
+ */
+export function extractRxToDataframe(groupEvents: any) {
+    let rxDataframe: any[][] = [];
+    groupEvents.forEach((event: any) => {
+        //for each event; where event is {time, component, stimulus, response}
+        if ("stimulus" in event) {
+            let stimulus = event["stimulus"];
+            if (stimulus.clazz === "org.arl.unet.phy.RxFrameNtf") {
+                //extract out the ID and timing
+                let rxID = stimulus.messageID;
+                let time = event["time"];
+                let pair = [rxID, time]; //pair of ID and time
+                rxDataframe.push(pair);
+            }
+        }
+    });
+    console.log(rxDataframe);
+    return rxDataframe;
+}
+
+// function noDupes(data: any[][]) {
+//     data
+//         .map(function (item) {
+//             return JSON.stringify(item);
+//         })
+//         .reduce(function (out, current) {
+//             if (out.indexOf(current) === -1) {out.push(current);}
+//             return out;
+//         }, [])
+//         .map(function (item) {
+//             return JSON.parse(item);
+//         });
+// }
