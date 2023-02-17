@@ -31,12 +31,8 @@ const App: React.FC = () => {
     cy.on("select", "edge", (event) => {
       if (!event.target[0].locked()) {
         setSidePanelInfo(event.target[0].data().info);
-        console.log(event.target[0].data().id);
         dispatchOpen();
       }
-    });
-    cy.on("mouseover", "node", (event) => {
-      console.log(event.target[0].data().id);
     });
 
   }, []);
