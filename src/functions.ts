@@ -1,10 +1,11 @@
-import { TreeCache, TreeNode } from "./types";
+import { Problem, State, TreeCache, TreeNode } from "./types";
 import { Queue } from "./classes/Queue";
 import * as fs from 'fs';
 import { parser } from 'stream-json';
 import { pick } from 'stream-json/filters/Pick';
 import { streamArray } from 'stream-json/streamers/StreamArray';
 import { Gaussian } from 'ts-gaussian';
+import { setServers } from "dns";
 
 /**
  * A function to split the component into useful parts.
@@ -630,7 +631,6 @@ export function extractTxToDataframe(groupEvents: any) {
             }
         }
     });
-    console.log(txDataframe);
     return txDataframe;
 }
 
@@ -654,10 +654,13 @@ export function extractRxToDataframe(groupEvents: any) {
             }
         }
     });
-    console.log(rxDataframe);
     return rxDataframe;
 }
 
+/**
+ * function that removes duplicate entries in rx/tx dataframes
+ * @param data 
+ */
 // function noDupes(data: any[][]) {
 //     data
 //         .map(function (item) {
@@ -671,3 +674,23 @@ export function extractRxToDataframe(groupEvents: any) {
 //             return JSON.parse(item);
 //         });
 // }
+
+/**
+ * BLAS function to match tx event with rx event from a pair of nodes
+ */
+export function assocRxTx(p: Problem, nhypothesis = 30) {
+    let firstState: State = {
+        score: 0,
+        backlink: undefined,
+        assoc: undefined,
+        i: 0,
+        j: 0,
+        mean: 0,
+        std: p.std     
+    };
+
+    console.log(p.delay(12,12));
+    console.log(p.passoc(12,12));
+    console.log(p.pfalse(12));
+    let setOfStates = [firstState];
+}

@@ -41,7 +41,7 @@ export interface Problem {
     std: number;
     delay(tx: number, rx:number): number;
     passoc(tx:number, rx:number): number;
-    passoc(rx:number): number;
+    pfalse(rx:number): number;
 }
 /**
  * @param score: score of each state
