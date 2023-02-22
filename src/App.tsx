@@ -6,9 +6,8 @@ import CytoscapeComponent from "react-cytoscapejs";
 import styles from "./mystyle.module.css";
 import Cytoscape from "cytoscape";
 import { SidePane } from "react-side-pane";
-import Component from "./utils/sidepanel";
 import { CytoscapeStylesheet, sidePanelOptions } from "./utils/stylingOptions";
-
+const _ = require('lodash');
 const App: React.FC = () => {
 
   const [open, dispatchOpen] = useReducer((prev) => !prev, false);
@@ -18,7 +17,11 @@ const App: React.FC = () => {
   const [elements, setElements] = useState<any>([]);
   const [sidePanelInfo, setSidePanelInfo] = useState<any>();
   const [simNumber, setSimNumber] = useState<number>();
-  
+  const [IDTrace, setIDTrace] = useState<string>();
+  const [selectedEdge, setSelectedEdge] = useState<string>();
+  const [prevEdge, setPrevEdge] = useState<string>();
+
+
   const cyRef = useRef<Cytoscape.Core>();
 
   // This effect runs once on mount and handles setting up imperative
@@ -32,9 +35,9 @@ const App: React.FC = () => {
       if (!event.target[0].locked()) {
         setSidePanelInfo(event.target[0].data().info);
         dispatchOpen();
+        setSelectedEdge(`${event.target[0].data().id}`)
       }
     });
-
   }, []);
 
   window.addEventListener("message", (event) => {
@@ -52,6 +55,7 @@ const App: React.FC = () => {
   }
 
   const handleSelectTrace = (trace : string) => {
+    setIDTrace(JSON.parse(trace)[1]);
     let [ actors, output ] = format(JSON.parse(trace)[2]);
     const newElements : any[] = [];
     const x = 100;
@@ -114,6 +118,7 @@ const App: React.FC = () => {
       }
       const edge = {
         data: {
+          id: `${simNumber}-${JSON.parse(trace)[1]}-${output[k].id}`,
           source: `${simNumber}-${JSON.parse(trace)[1]}-${output[k].id}-from`,
           target: `${simNumber}-${JSON.parse(trace)[1]}-${output[k].id}-to`,
           label: `${output[k].clazz}`,
@@ -133,6 +138,69 @@ const App: React.FC = () => {
     }
     setElements(newElements);
   }
+
+  React.useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy) {
+      return;
+    }
+    const from = cy.getElementById(`${prevEdge}-from`);
+    const to = cy.getElementById(`${prevEdge}-to`)
+    if (open === false) {
+      from.edgesTo(to).unselect();
+    }
+  }, [open])
+  
+  function Component({onClose, ...props}) {
+  
+    const children = Object.keys(props.children);
+    const childrenButton = children.map((child) => {
+      return <div><button onClick={() => example(child)}>{child}</button></div>
+    });
+  
+    const parents = Object.keys(props.parent);
+    const parentsButton = parents.map((parent) => {
+      return <div><button onClick={() => example(parent)}>{parent}</button></div>
+    });
+  
+    function example(id) {
+      const cy = cyRef.current;
+      if (!cy) {
+        return;
+      }
+      const from = cy.getElementById(`${simNumber}-${IDTrace}-${id}-from`);
+      const to = cy.getElementById(`${simNumber}-${IDTrace}-${id}-to`);
+      const prevFrom = cy.getElementById(`${selectedEdge}-from`);
+      const prevTo = cy.getElementById(`${selectedEdge}-to`)
+      from.edgesTo(to).select();
+      prevFrom.edgesTo(prevTo).unselect();
+      dispatchOpen();
+      cy.fit(from.edgesTo(to), 200);
+    }
+    
+    return (
+      <div className={styles.panel}>
+        <h1>ID: {props.id}</h1>
+        <h1>Time: {props.time}</h1>
+        <h1>Clazz: {props.clazz}</h1>
+        <h1>Sender: {props.sender}</h1>
+        <h1>Recipient: {props.recipient}</h1>
+        <h1>{parents.length > 0 ? `Parent:` : `Event has no parent`}</h1>
+        <h1>{parentsButton}</h1>
+        <h1>{children.length > 0 ? `Children:` : `Event has no children`}</h1>
+        <h1>{childrenButton}</h1>
+      </div>
+    );
+  }
+
+  function resetView() {
+    cyRef.current?.fit();
+  }
+
+  React.useEffect(() => {
+    cyRef.current?.fit();
+  }
+  ,[IDTrace])
 
   return (
     <div>
@@ -166,7 +234,8 @@ const App: React.FC = () => {
           "No traces found"
         }
       </select>
-        </div>
+      </div>
+      {IDTrace && <button onClick={() => resetView()}>Fit Diagram</button>}
       <div>
         <CytoscapeComponent className={styles.body} 
         elements={[ ...elements ]}
@@ -178,8 +247,6 @@ const App: React.FC = () => {
         stylesheet={CytoscapeStylesheet}
         cy={(cy): void => {
           cyRef.current = cy;
-          cy.fit();
-          // cy.zoom(0.7); 
         }}
         />
       </div>
@@ -188,6 +255,7 @@ const App: React.FC = () => {
         width={50}
         {...sidePanelOptions}
         onClose={dispatchOpen}
+        hideBackdrop={true}
       >
         <Component
           onClose={dispatchOpen}
