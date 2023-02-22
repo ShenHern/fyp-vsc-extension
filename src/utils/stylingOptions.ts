@@ -144,6 +144,30 @@ export const CytoscapeStylesheet: Array<cytoscape.Stylesheet> = [
         }
       }, 
     }, 
+    {
+      selector: "edge:selected",
+      style: {
+        label: "data(label)", 
+        "font-size": "20",
+        "text-border-opacity": 1,
+        "text-border-width": 5,
+        "text-border-color": "#1976d2",
+        'line-color': function(e) {
+          let color : any = "#1976d2";
+          if (e.data("source").includes("-start")){
+            color = "white";
+          }
+          return color
+        },
+        'target-arrow-color': function(e) {
+          let color : any = "#1976d2";
+          if (e.data("source").includes("-start")){
+            color = "white";
+          }
+          return color
+        },
+      }
+    }
   ];
   
   export const sidePanelOptions = {
