@@ -10,16 +10,64 @@
 }
 
 .panel {
-  font-family: sans-serif;
+  font-family: helvetica, sans-serif;
   text-align: center;
+  /* overflow: scroll; */
+  width: 100%;
+  align-items: center;
+}
+
+p {
+  color: black;
+  font-family: helvetica, sans-serif;
 }
 
 h1 {
   color: black;
+  font-family: helvetica, sans-serif;
 }
 
 .button {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Solid border */
+hr.solid {
+  border-top: 2px solid #bbb;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  border: 1px solid #ddd;
+}
+th, td {
+  color: black;
+	font-family: helvetica, sans-serif;
+  text-align: center;
+  padding: 16px;
+  font-size: 30;
+}
+
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.badgeP {
+  background-color: #D16969;
+  color: white;
+  padding: 4px 8px;
+  text-align: center;
+  border-radius: 5px;
+}
+
+.badgeC {
+  background-color: #6A9955;
+  color: white;
+  padding: 4px 8px;
+  text-align: center;
+  border-radius: 5px;
 }

@@ -9,6 +9,70 @@ import { SidePane } from "react-side-pane";
 import { CytoscapeStylesheet, sidePanelOptions } from "./utils/stylingOptions";
 import styled from "styled-components";
 
+const blue = "#007acc";
+const red = "#D16969";
+const green = "#6A9955";
+
+const Button1 = styled.button`
+display: inline-block;
+border-radius: 3px;
+padding: 0.5rem 0;
+margin: 0.5rem 1rem;
+width: 11rem;
+background: white;
+color: black;
+border: 2px solid white;
+&:hover {
+  background-color: ${blue};
+  color: white;
+}
+`;
+
+const Button2 = styled.button`
+display: inline-block;
+border-radius: 3px;
+padding: 0.5rem 0;
+margin: 0.5rem 1rem;
+width: 15rem;
+background: white;
+color: black;
+border: 2px solid ${green};
+&:hover {
+background-color: ${green};
+color: white;
+}
+`;
+
+const Button3 = styled.button`
+display: inline-block;
+border-radius: 3px;
+padding: 0.5rem 0;
+margin: 0.5rem 1rem;
+width: 15rem;
+background: white;
+color: black;
+border: 2px solid ${red};
+&:hover {
+  background-color: ${red};
+  color: white;
+}
+`;
+
+const Button4 = styled.button`
+display: inline-block;
+border-radius: 3px;
+padding: 0.5rem 0;
+margin: 0.5rem 1rem;
+width: 15rem;
+background: white;
+color: black;
+border: 2px solid ${blue};
+&:hover {
+  background-color: ${blue};
+  color: white;
+}
+`;
+
 const App: React.FC = () => {
 
   const [open, dispatchOpen] = useReducer((prev) => !prev, false);
@@ -171,7 +235,7 @@ const App: React.FC = () => {
   
     const parents = Object.keys(props.parent);
     const parentsButton = parents.map((parent) => {
-      return <div className={styles.button}><Button2 onClick={() => example(parent)}>{parent}<br />{props.parent[parent].clazz}</Button2></div>
+      return <div className={styles.button}><Button3 onClick={() => example(parent)}>{parent}<br />{props.parent[parent].clazz}</Button3></div>
     });
   
     function example(id) {
@@ -221,16 +285,29 @@ const App: React.FC = () => {
 
     return (
       <div className={styles.panel}>
-        <h1>ID: {props.id}</h1>
-        <h1>Time: {props.time}</h1>
-        <h1>Clazz: {props.clazz}</h1>
-        <h1>Sender: {props.sender}</h1>
-        <h1>Recipient: {props.recipient}</h1>
-        <div><Button2 onClick={() => HighlightParentChild()}>Highlight All</Button2></div>
-        <h1>{parents.length > 0 ? `Parent:` : `Event has no parent`}</h1>
-        <h1>{parentsButton}</h1>
-        <h1>{children.length > 0 ? `Children:` : `Event has no children`}</h1>
-        <h1>{childrenButton}</h1>
+        <h1>{props.id}</h1>
+        <h1>{props.clazz}</h1>
+        <hr className={styles.solid}></hr>
+        <table>
+          <tr>
+            <th>Time:</th>
+            <th>Sender:</th>
+            <th>Recipient:</th>
+          </tr>
+          <tr>
+            <td>{props.time}</td>
+            <td>{props.sender}</td>
+            <td>{props.recipient}</td>
+          </tr>
+        </table>
+        <hr className={styles.solid}></hr>
+        <div><Button4 onClick={() => HighlightParentChild()}>Highlight Parents & Children</Button4></div>
+        <br></br>
+        <div>{parents.length > 0 ? <span className={styles.badgeP}>Parents:</span> : <span className={styles.badgeP}>Event has no parent</span>}</div>
+        <div>{parentsButton}</div>
+        <br></br>
+        <div>{children.length > 0 ? <span className={styles.badgeC}>Children:</span> : <span className={styles.badgeC}>Event has no children</span>}</div>
+        <div>{childrenButton}</div>
       </div>
     );
   }
@@ -275,35 +352,6 @@ const App: React.FC = () => {
   }
   ,[IDTrace])
 
-  const Button1 = styled.button`
-  display: inline-block;
-  border-radius: 3px;
-  padding: 0.5rem 0;
-  margin: 0.5rem 1rem;
-  width: 11rem;
-  background: white;
-  color: black;
-  border: 2px solid white;
-  &:hover {
-    background-color: #1976d2;
-    color: white;
-  }
-`;
-
-  const Button2 = styled.button`
-  display: inline-block;
-  border-radius: 3px;
-  padding: 0.5rem 0;
-  margin: 0.5rem 1rem;
-  width: 15rem;
-  background: white;
-  color: black;
-  border: 2px solid #1976d2;
-  &:hover {
-    background-color: #1976d2;
-    color: white;
-  }
-  `;
   return (
     <div>
       <div className={styles.select}>
@@ -338,8 +386,8 @@ const App: React.FC = () => {
       </select>
       </div >
       <div className={styles.button}>
-      {IDTrace && <Button1 onClick={() => resetView()}>Fit Diagram</Button1>}
-      {IDTrace && <Button1 onClick={() => resetHighlight()}>Clear Highlight</Button1>}
+      {IDTrace && <Button1 onClick={() => resetView()}>Reset View</Button1>}
+      {IDTrace && <Button1 onClick={() => resetHighlight()}>Clear All Highlights</Button1>}
       </div>
       <div>
         <CytoscapeComponent className={styles.body} 
