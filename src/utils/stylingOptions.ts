@@ -1,8 +1,11 @@
+const blue = "#007acc";
+const red = "#D16969";
+const green = "#6A9955";
 export const CytoscapeStylesheet: Array<cytoscape.Stylesheet> = [ 
     { 
       selector: "node", 
       style: { 
-        "background-color": "#1976d2", 
+        "background-color": blue, 
         width: function(e) {
           let width : any = "label";
           if ((e.data("id").includes("from") || e.data("id").includes("to")) && !e.data("label").includes("#")){
@@ -83,7 +86,7 @@ export const CytoscapeStylesheet: Array<cytoscape.Stylesheet> = [
         "text-halign": "center", 
         "text-valign": "center", 
         "background-color": function(e) {
-          let color = "#1976d2" as any;
+          let color = blue as any;
           if ((e.data("id").includes("from") || e.data("id").includes("to")) && !e.data("label").includes("#")) {
             color = "white";
           }
@@ -126,6 +129,7 @@ export const CytoscapeStylesheet: Array<cytoscape.Stylesheet> = [
       style: { 
         label: "data(label)", 
         "font-size": "20",
+        "color": "black",
         "text-background-color": "white", 
         "text-background-opacity": 1, 
         "text-background-padding": "5px", 
@@ -149,18 +153,19 @@ export const CytoscapeStylesheet: Array<cytoscape.Stylesheet> = [
       style: {
         label: "data(label)", 
         "font-size": "20",
+        "color": "black",
         "text-border-opacity": 1,
         "text-border-width": 5,
-        "text-border-color": "#1976d2",
+        "text-border-color": blue,
         'line-color': function(e) {
-          let color : any = "#1976d2";
+          let color : any = blue;
           if (e.data("source").includes("-start")){
             color = "white";
           }
           return color
         },
         'target-arrow-color': function(e) {
-          let color : any = "#1976d2";
+          let color : any = blue;
           if (e.data("source").includes("-start")){
             color = "white";
           }
@@ -173,18 +178,19 @@ export const CytoscapeStylesheet: Array<cytoscape.Stylesheet> = [
       style: {
         label: "data(label)", 
         "font-size": "20",
+        "color": "white",
         "text-border-opacity": 0,
         "text-border-width": 5,
-        "text-background-color": "#6fd585",
+        "text-background-color": green,
         'line-color': function(e) {
-          let color : any = "green";
+          let color : any = green;
           if (e.data("source").includes("-start")){
             color = "white";
           }
           return color
         },
         'target-arrow-color': function(e) {
-          let color : any = "#6fd585";
+          let color : any = "#218559";
           if (e.data("source").includes("-start")){
             color = "white";
           }
@@ -198,17 +204,18 @@ export const CytoscapeStylesheet: Array<cytoscape.Stylesheet> = [
         label: "data(label)", 
         "font-size": "20",
         "text-border-opacity": 0,
+        "color": "white",
         "text-border-width": 5,
-        "text-background-color": "#e76255",
+        "text-background-color": red,
         'line-color': function(e) {
-          let color : any = "#e76255";
+          let color : any = red;
           if (e.data("source").includes("-start")){
             color = "white";
           }
           return color
         },
         'target-arrow-color': function(e) {
-          let color : any = "#e76255";
+          let color : any = red;
           if (e.data("source").includes("-start")){
             color = "white";
           }
