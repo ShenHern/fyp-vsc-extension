@@ -1,13 +1,14 @@
 /* eslint-disable prefer-const */
 import React, { useState, useRef, useReducer} from "react";
 import { eventsArray } from "./utils/jsonParser";
-import { parser, analyseTrace, format, edgeFormat } from "./utils/jsonParser";
+import { parser, analyseTrace, format } from "./utils/jsonParser";
 import CytoscapeComponent from "react-cytoscapejs"; 
 import styles from "./mystyle.module.css";
 import Cytoscape from "cytoscape";
 import { SidePane } from "react-side-pane";
 import { CytoscapeStylesheet, sidePanelOptions } from "./utils/stylingOptions";
-const _ = require('lodash');
+import styled from "styled-components";
+
 const App: React.FC = () => {
 
   const [open, dispatchOpen] = useReducer((prev) => !prev, false);
@@ -19,8 +20,7 @@ const App: React.FC = () => {
   const [simNumber, setSimNumber] = useState<number>();
   const [IDTrace, setIDTrace] = useState<string>();
   const [selectedEdge, setSelectedEdge] = useState<string>();
-  const [prevEdge, setPrevEdge] = useState<string>();
-
+  const [highlightZoom, setHighlightZoom] = useState<any[]>();
 
   const cyRef = useRef<Cytoscape.Core>();
 
@@ -32,7 +32,18 @@ const App: React.FC = () => {
       return;
     }
     cy.on("select", "edge", (event) => {
+      cy.edges().removeClass("Children");
+      cy.edges().removeClass("Parent");
       if (!event.target[0].locked()) {
+        console.log(event.target[0].data().info)
+        cy.animate({
+          fit: {
+            eles: event.target,
+            padding: 200
+          }
+        }, {
+          duration: 200
+        });
         setSidePanelInfo(event.target[0].data().info);
         dispatchOpen();
         setSelectedEdge(`${event.target[0].data().id}`)
@@ -55,6 +66,7 @@ const App: React.FC = () => {
   }
 
   const handleSelectTrace = (trace : string) => {
+    const cy = cyRef.current;
     setIDTrace(JSON.parse(trace)[1]);
     let [ actors, output ] = format(JSON.parse(trace)[2]);
     const newElements : any[] = [];
@@ -65,7 +77,6 @@ const App: React.FC = () => {
     for (let i = 0; i < actors.flat().length; i++) {
       actors.splice(i, 1);
     }
-
     for (let j = 0; j < actors.length; j++) {
       const nodes_start = {
         data: {
@@ -139,28 +150,28 @@ const App: React.FC = () => {
     setElements(newElements);
   }
 
-  React.useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy) {
-      return;
-    }
-    const from = cy.getElementById(`${prevEdge}-from`);
-    const to = cy.getElementById(`${prevEdge}-to`)
-    if (open === false) {
-      from.edgesTo(to).unselect();
-    }
-  }, [open])
+  // React.useEffect(() => {
+  //   const cy = cyRef.current;
+  //   if (!cy) {
+  //     return;
+  //   }
+  //   const from = cy.getElementById(`${prevEdge}-from`);
+  //   const to = cy.getElementById(`${prevEdge}-to`)
+  //   if (open === false) {
+  //     from.edgesTo(to).unselect();
+  //   }
+  // }, [open])
   
   function Component({onClose, ...props}) {
   
     const children = Object.keys(props.children);
     const childrenButton = children.map((child) => {
-      return <div><button onClick={() => example(child)}>{child}</button></div>
+      return <div className={styles.button}><Button2 onClick={() => example(child)}>{child}<br />{props.children[child].clazz}</Button2></div>
     });
   
     const parents = Object.keys(props.parent);
     const parentsButton = parents.map((parent) => {
-      return <div><button onClick={() => example(parent)}>{parent}</button></div>
+      return <div className={styles.button}><Button2 onClick={() => example(parent)}>{parent}<br />{props.parent[parent].clazz}</Button2></div>
     });
   
     function example(id) {
@@ -175,9 +186,39 @@ const App: React.FC = () => {
       from.edgesTo(to).select();
       prevFrom.edgesTo(prevTo).unselect();
       dispatchOpen();
-      cy.fit(from.edgesTo(to), 200);
     }
-    
+
+    function HighlightParentChild() {
+      const cy = cyRef.current;
+      if (!cy) {
+        return;
+      }
+      const highlighted : any[] = []
+      const children = Object.keys(props.children);
+      for (let i = 0; i < children.length; i++) {
+        const from = cy.getElementById(`${simNumber}-${IDTrace}-${children[i]}-from`);
+        const to = cy.getElementById(`${simNumber}-${IDTrace}-${children[i]}-to`);
+        from.edgesTo(to).addClass("Children");
+        highlighted.push(from.edgesTo(to));
+      }
+      const parents = Object.keys(props.parent);
+      for (let j = 0; j < parents.length; j++) {
+        const from = cy.getElementById(`${simNumber}-${IDTrace}-${parents[j]}-from`);
+        const to = cy.getElementById(`${simNumber}-${IDTrace}-${parents[j]}-to`);
+        from.edgesTo(to).addClass("Parent");
+        highlighted.push(from.edgesTo(to));
+      }
+      setHighlightZoom(highlightZoom);
+    }
+
+    React.useEffect(() => {
+      const cy = cyRef.current;
+      if (!cy) {
+        return;
+      }
+      
+    }, [highlightZoom])
+
     return (
       <div className={styles.panel}>
         <h1>ID: {props.id}</h1>
@@ -185,6 +226,7 @@ const App: React.FC = () => {
         <h1>Clazz: {props.clazz}</h1>
         <h1>Sender: {props.sender}</h1>
         <h1>Recipient: {props.recipient}</h1>
+        <div><Button2 onClick={() => HighlightParentChild()}>Highlight All</Button2></div>
         <h1>{parents.length > 0 ? `Parent:` : `Event has no parent`}</h1>
         <h1>{parentsButton}</h1>
         <h1>{children.length > 0 ? `Children:` : `Event has no children`}</h1>
@@ -194,14 +236,74 @@ const App: React.FC = () => {
   }
 
   function resetView() {
-    cyRef.current?.fit();
+    const cy = cyRef.current;
+    if (!cy) {
+      return;
+    }
+    cy.animate({
+      fit: {
+        eles: "",
+        padding: 100
+      }
+    }, {
+      duration: 200
+    });
+  }
+
+  function resetHighlight() {
+    const cy = cyRef.current;
+    if (!cy) {
+      return;
+    }
+    cy.edges().removeClass("Children");
+    cy.edges().removeClass("Parent");
   }
 
   React.useEffect(() => {
-    cyRef.current?.fit();
+    const cy = cyRef.current;
+    if (!cy) {
+      return;
+    }
+    cy.animate({
+      fit: {
+        eles: "",
+        padding: 100
+      }
+    }, {
+      duration: 200
+    });
   }
   ,[IDTrace])
 
+  const Button1 = styled.button`
+  display: inline-block;
+  border-radius: 3px;
+  padding: 0.5rem 0;
+  margin: 0.5rem 1rem;
+  width: 11rem;
+  background: white;
+  color: black;
+  border: 2px solid white;
+  &:hover {
+    background-color: #1976d2;
+    color: white;
+  }
+`;
+
+  const Button2 = styled.button`
+  display: inline-block;
+  border-radius: 3px;
+  padding: 0.5rem 0;
+  margin: 0.5rem 1rem;
+  width: 15rem;
+  background: white;
+  color: black;
+  border: 2px solid #1976d2;
+  &:hover {
+    background-color: #1976d2;
+    color: white;
+  }
+  `;
   return (
     <div>
       <div className={styles.select}>
@@ -234,8 +336,11 @@ const App: React.FC = () => {
           "No traces found"
         }
       </select>
+      </div >
+      <div className={styles.button}>
+      {IDTrace && <Button1 onClick={() => resetView()}>Fit Diagram</Button1>}
+      {IDTrace && <Button1 onClick={() => resetHighlight()}>Clear Highlight</Button1>}
       </div>
-      {IDTrace && <button onClick={() => resetView()}>Fit Diagram</button>}
       <div>
         <CytoscapeComponent className={styles.body} 
         elements={[ ...elements ]}
@@ -250,18 +355,18 @@ const App: React.FC = () => {
         }}
         />
       </div>
-      <SidePane
-        open={open}
-        width={50}
-        {...sidePanelOptions}
-        onClose={dispatchOpen}
-        hideBackdrop={true}
-      >
-        <Component
+        <SidePane
+          open={open}
+          width={50}
+          {...sidePanelOptions}
           onClose={dispatchOpen}
-          {...sidePanelInfo}
-        />
-      </SidePane>
+          hideBackdrop={true}
+        >
+          <Component
+            onClose={dispatchOpen}
+            {...sidePanelInfo}
+          />
+        </SidePane>
     </div>
   );
 };
