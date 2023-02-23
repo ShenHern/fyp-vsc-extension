@@ -56,7 +56,6 @@
     "@types/react": "^18.0.20",
     "@types/react-dom": "^18.0.6",
     "@types/stream-json": "^1.7.3",
-    "@types/styled-components": "^5.1.26",
     "@types/vscode": "^1.71.0",
     "@typescript-eslint/eslint-plugin": "^5.31.0",
     "@typescript-eslint/parser": "^5.31.0",
@@ -75,7 +74,7 @@
   "dependencies": {
     "@projectstorm/react-diagrams": "^6.7.4",
     "@types/react-cytoscapejs": "^1.2.2",
-    "node-polyfill-webpack-plugin": "^2.0.1",
+    "cytoscape": "^3.23.0",
     "react": "^18.2.0",
     "react-cytoscapejs": "^2.0.0",
     "react-dom": "^18.2.0",
@@ -86,6 +85,7 @@
     "react-zoom-pan-pinch": "^2.2.1",
     "reactflow": "^11.4.2",
     "reaflow": "^5.0.6",
+    "styled-components": "^5.3.6",
     "terser": "^5.15.0",
     "yarn": "^1.22.19",
     "zustand": "^4.1.1"
