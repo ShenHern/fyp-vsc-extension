@@ -167,6 +167,54 @@ export const CytoscapeStylesheet: Array<cytoscape.Stylesheet> = [
           return color
         },
       }
+    },
+    {
+      selector: ".Children",
+      style: {
+        label: "data(label)", 
+        "font-size": "20",
+        "text-border-opacity": 0,
+        "text-border-width": 5,
+        "text-background-color": "#6fd585",
+        'line-color': function(e) {
+          let color : any = "green";
+          if (e.data("source").includes("-start")){
+            color = "white";
+          }
+          return color
+        },
+        'target-arrow-color': function(e) {
+          let color : any = "#6fd585";
+          if (e.data("source").includes("-start")){
+            color = "white";
+          }
+          return color
+        },
+      }
+    },
+    {
+      selector: ".Parent",
+      style: {
+        label: "data(label)", 
+        "font-size": "20",
+        "text-border-opacity": 0,
+        "text-border-width": 5,
+        "text-background-color": "#e76255",
+        'line-color': function(e) {
+          let color : any = "#e76255";
+          if (e.data("source").includes("-start")){
+            color = "white";
+          }
+          return color
+        },
+        'target-arrow-color': function(e) {
+          let color : any = "#e76255";
+          if (e.data("source").includes("-start")){
+            color = "white";
+          }
+          return color
+        },
+      }
     }
   ];
   
