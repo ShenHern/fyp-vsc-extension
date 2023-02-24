@@ -190,7 +190,7 @@ export const CytoscapeStylesheet: Array<cytoscape.Stylesheet> = [
           return color
         },
         'target-arrow-color': function(e) {
-          let color : any = "#218559";
+          let color : any = green;
           if (e.data("source").includes("-start")){
             color = "white";
           }
