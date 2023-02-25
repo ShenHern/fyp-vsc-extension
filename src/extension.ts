@@ -42,106 +42,118 @@ export function activate(context: vscode.ExtensionContext) {
 		let rxA: any[][];
 		let txB: any[][];
 		let rxB: any[][];
+		let globalDelayInSeconds: number;
 		p1.then((result) => {
 			console.log(result);
 			if (result === undefined) {
 				throw new Error("File not found!");
 			}
-			vscode.window.showInformationMessage(result[0].path);
-			let tracePathA = result[0].path;
-			tracePathA = tracePathA.substring(1);	// remove first slash from path provided by vscode API
-			let arrOfGroupsStream = createJsonStream(tracePathA);
-			/* arrOfGroups looks like this:
-				{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
-				{key: 1, value: group2}
-			*/
-			let groupQuckPickIndex = 1;
-			// stream the json file
-			arrOfGroupsStream.on('data', (group) => {
-				let groupStringArray: Array<string> = [];
-				// create string array that will be used to display groups for user to select
-				groupStringArray.push(`${groupQuckPickIndex}.\t${group.value.group}`);
-				groupStringArray.push("Go to Next Group");
-				arrOfGroupsStream.pause();
+			//TODO: extract tx and rx nodes from two trace files; i.e., result[0] and result[1]
 
-				//create quick pick windows to display the different groups of events
-				// display the quickpick window for event group selection
-				vscode.window.showQuickPick(groupStringArray).then(
-					result => {
-						if (result === undefined) {
-							return result;
-						}
-						if (result === "Go to Next Group") {
-							return result;
-						} else {
-							return group.value.events;
-						}
-					}
-				).then(groupEvents => {
-					if (groupEvents === undefined) {
-						throw new Error("Invalid group of Events");
-					} else if (groupEvents === "Go to Next Group") {
-						groupQuckPickIndex++;
-						arrOfGroupsStream.resume();
-						return groupEvents;
-					}
-					txA = extractTxToDataframe(groupEvents);
-					rxA = extractRxToDataframe(groupEvents);
-					console.log(txA);
-					console.log(rxA);
-					return "done";
-				}).then((proceed) => {
-					if (proceed === "Go to Next Group") {
-						return;
-					}
-					let tracePathB = result[1].path;
-					tracePathB = tracePathB.substring(1);
-					let arrOfGroupsStreamB = createJsonStream(tracePathB);
-					/* arrOfGroups looks like this:
-						{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
-						{key: 1, value: group2}
-					*/
-					let groupQuckPickIndexB = 1;
-					// stream the json file
-					arrOfGroupsStreamB.on('data', (group) => {
-						let groupStringArray: Array<string> = [];
-						// create string array that will be used to display groups for user to select
-						groupStringArray.push(`${groupQuckPickIndexB}.\t${group.value.group}`);
-						groupStringArray.push("Go to Next Group");
-						arrOfGroupsStreamB.pause();
 
-						//create quick pick windows to display the different groups of events
-						// display the quickpick window for event group selection
-						vscode.window.showQuickPick(groupStringArray).then(
-							result => {
-								if (result === undefined) {
-									return result;
-								}
-								if (result === "Go to Next Group") {
-									return result;
-								} else {
-									return group.value.events;
-								}
+
+			//TODO: ask for delay between the nodes
+			const twoNodeDelay = vscode.window.showInputBox({ placeHolder: "Please enter propogation delay between 2 nodes (in seconds)" });
+			twoNodeDelay.then((delayInSeconds) => {
+				globalDelayInSeconds = Number(delayInSeconds);
+			}).then(() => {
+				vscode.window.showInformationMessage(result[0].path);
+				let tracePathA = result[0].path;
+				tracePathA = tracePathA.substring(1);	// remove first slash from path provided by vscode API
+				let arrOfGroupsStream = createJsonStream(tracePathA);
+				/* arrOfGroups looks like this:
+					{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
+					{key: 1, value: group2}
+				*/
+				let groupQuckPickIndex = 1;
+				// stream the json file
+				arrOfGroupsStream.on('data', (group) => {
+					let groupStringArray: Array<string> = [];
+					// create string array that will be used to display groups for user to select
+					groupStringArray.push(`${groupQuckPickIndex}.\t${group.value.group}`);
+					groupStringArray.push("Go to Next Group");
+					arrOfGroupsStream.pause();
+
+					//create quick pick windows to display the different groups of events
+					// display the quickpick window for event group selection
+					vscode.window.showQuickPick(groupStringArray).then(
+						result => {
+							if (result === undefined) {
+								return result;
 							}
-						).then(groupEvents => {
-							if (groupEvents === undefined) {
-								throw new Error("Invalid group of Events");
-							} else if (groupEvents === "Go to Next Group") {
-								groupQuckPickIndexB++;
-								arrOfGroupsStreamB.resume();
-								return;
+							if (result === "Go to Next Group") {
+								return result;
+							} else {
+								return group.value.events;
 							}
-							txB = extractTxToDataframe(groupEvents);
-							rxB = extractRxToDataframe(groupEvents);
-							console.log(txB);
-							console.log(rxB);
+						}
+					).then(groupEvents => {
+						if (groupEvents === undefined) {
+							throw new Error("Invalid group of Events");
+						} else if (groupEvents === "Go to Next Group") {
+							groupQuckPickIndex++;
+							arrOfGroupsStream.resume();
+							return groupEvents;
+						}
+						txA = extractTxToDataframe(groupEvents);
+						rxA = extractRxToDataframe(groupEvents);
+						console.log(txA);
+						console.log(rxA);
+						return "done";
+					}).then((proceed) => {
+						if (proceed === "Go to Next Group") {
+							return;
+						}
+						let tracePathB = result[1].path;
+						tracePathB = tracePathB.substring(1);
+						let arrOfGroupsStreamB = createJsonStream(tracePathB);
+						/* arrOfGroups looks like this:
+							{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
+							{key: 1, value: group2}
+						*/
+						let groupQuckPickIndexB = 1;
+						// stream the json file
+						arrOfGroupsStreamB.on('data', (group) => {
+							let groupStringArray: Array<string> = [];
+							// create string array that will be used to display groups for user to select
+							groupStringArray.push(`${groupQuckPickIndexB}.\t${group.value.group}`);
+							groupStringArray.push("Go to Next Group");
+							arrOfGroupsStreamB.pause();
 
-							arrOfGroupsStreamB.destroy();
+							//create quick pick windows to display the different groups of events
+							// display the quickpick window for event group selection
+							vscode.window.showQuickPick(groupStringArray).then(
+								result => {
+									if (result === undefined) {
+										return result;
+									}
+									if (result === "Go to Next Group") {
+										return result;
+									} else {
+										return group.value.events;
+									}
+								}
+							).then(groupEvents => {
+								if (groupEvents === undefined) {
+									throw new Error("Invalid group of Events");
+								} else if (groupEvents === "Go to Next Group") {
+									groupQuckPickIndexB++;
+									arrOfGroupsStreamB.resume();
+									return;
+								}
+								txB = extractTxToDataframe(groupEvents);
+								rxB = extractRxToDataframe(groupEvents);
+								console.log(txB);
+								console.log(rxB);
+
+								arrOfGroupsStreamB.destroy();
+								arrOfGroupsStream.destroy();
+							});
 						});
+					}).then(() => {
+						//TODO: BLAS txA,rxA and txB, rxB
+
 					});
-				}).then(() => {
-					//TODO: BLAS txA,rxA and txB, rxB
-					
 				});
 			});
 		});
