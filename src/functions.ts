@@ -9,7 +9,7 @@ import { sha1 } from 'object-hash';
 /**
  * A function to split the component into useful parts.
  * @param s the component string
- * @returns an array containing split component parts
+ * @returns an array containing split component parts [agent_name, clazz, node]
  */
 function splitComponents(s: string) {
     const regexName = /\w.*(?=::)/;
@@ -615,12 +615,13 @@ export function createJsonStream(tracePath: string) {
  * @param groupEvents group of events from trace.json file
  * @returns 2d array containing all tx events from a unet node, e.g., [[txID1, timing1], [txID2, timing2]]
  */
-export function extractTxToDataframe(groupEvents: any) {
+export function extractTxToDataframe(receiver: string, groupEvents: any) {
     let txDataframe: any[][] = [];
     groupEvents.forEach((event: any) => {
         //for each event; where event is {time, component, stimulus, response}
         if ("response" in event) {
             let response = event["response"];
+            // TODO: include stimulus.sender in trace.json  && response.receiver === receiver
             if (response.clazz === "org.arl.unet.phy.TxFrameReq") {
                 //extract out the ID and timing
                 let txID = response.messageID;
@@ -638,12 +639,13 @@ export function extractTxToDataframe(groupEvents: any) {
  * @param groupEvents group of events from trace.json file
  * @returns 2d array containing all rx events from a unet node, e.g., [[rxID1, timing1], [rxID2, timing2]]
  */
-export function extractRxToDataframe(groupEvents: any) {
+export function extractRxToDataframe(sender: string, groupEvents: any) {
     let rxDataframe: any[][] = [];
     groupEvents.forEach((event: any) => {
         //for each event; where event is {time, component, stimulus, response}
         if ("stimulus" in event) {
             let stimulus = event["stimulus"];
+            // TODO: include stimulus.sender in trace.json  && stimulus.sender === sender
             if (stimulus.clazz === "org.arl.unet.phy.RxFrameNtf") {
                 //extract out the ID and timing
                 let rxID = stimulus.messageID;
@@ -654,6 +656,12 @@ export function extractRxToDataframe(groupEvents: any) {
         }
     });
     return rxDataframe;
+}
+
+export function extractNode(events: Array<{ [header: string]: any }>) {
+    let components = splitComponents(events[0].component);
+    let node = components[2];
+    return node;
 }
 
 /**
@@ -716,14 +724,14 @@ export async function assocRxTx(p: Problem, nhypothesis = 30) {
                     mean: state.mean,
                     std: state.std
                 });
-    
+
                 for (let i = 0; i < p.tx.length; i++) {
                     let tx = p.tx[i][1];    //iterate through all tx timings
                     let deltaTime = rx - tx - p.delay(tx, rx);
                     if (deltaTime < -3 * state.std) {
                         break;
                     }
-    
+
                     prob = (1 - pfalse) * timeDistribution.pdf(deltaTime) * p.passoc(tx, rx);
                     setOfStatesPlus.push({
                         score: state.score + Math.log10(prob),
@@ -742,7 +750,7 @@ export async function assocRxTx(p: Problem, nhypothesis = 30) {
                 console.log(setOfStatesPlus);
                 break;
             }
-    
+
             setOfStatesPlus.filter(s => s.score >= setOfStatesPlus[0].score - 1);
             setOfStatesPlus.filter(s => !isDuplicate(s, setOfStatesPlus));
             if (setOfStatesPlus.length > nhypothesis) {
@@ -751,9 +759,9 @@ export async function assocRxTx(p: Problem, nhypothesis = 30) {
             setOfStates = setOfStatesPlus;
         }
         let assoc: any[][] = [];    //assoc --> [[i1, j1], [i2, j2]]
-        let state: State|undefined = setOfStates[0];
+        let state: State | undefined = setOfStates[0];
         while (state !== undefined) {
-            if (!(state.assoc === undefined)) {
+            if ((state.assoc !== undefined)) {
                 assoc.push(state.assoc);    // state.assoc --> [i, j] where i: tx idx; j: rx idx
             }
             state = state.backlink;

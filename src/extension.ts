@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent, createJsonStream, extractRxToDataframe, extractTxToDataframe, assocRxTx } from './functions';
+import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent, createJsonStream, extractRxToDataframe, extractTxToDataframe, assocRxTx, extractNode } from './functions';
 import { Problem } from './types';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -24,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('Hello World from VSCode!');
 	});
 
-	let disposable2 = vscode.commands.registerCommand('unettrace.solve', () => {
+	let disposable2 = vscode.commands.registerCommand('unettrace.solve', async () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
 
@@ -42,37 +42,88 @@ export function activate(context: vscode.ExtensionContext) {
 		let rxA: any[][];
 		let txB: any[][];
 		let rxB: any[][];
-		let globalDelayInSeconds: number;
-		p1.then((result) => {
-			console.log(result);
-			if (result === undefined) {
-				throw new Error("File not found!");
-			}
-			//TODO: extract tx and rx nodes from two trace files; i.e., result[0] and result[1]
+		let result = await p1;
+		console.log(result);
+		if (result === undefined) {
+			throw new Error("File not found!");
+		}
+		//extract tx and rx nodes from two trace files; i.e., result[0] and result[1]
+		let tracePathA = result[0].path;
+		tracePathA = tracePathA.substring(1);	// remove first slash from path provided by vscode API
+		let tracePathB = result[1].path;
+		tracePathB = tracePathB.substring(1);
 
 
+		//ask for delay between the nodes
+		const twoNodeDelay = vscode.window.showInputBox({ placeHolder: "Please enter propogation delay between 2 nodes (in seconds)" });
+		let delayInSeconds = await twoNodeDelay;
 
-			//TODO: ask for delay between the nodes
-			const twoNodeDelay = vscode.window.showInputBox({ placeHolder: "Please enter propogation delay between 2 nodes (in seconds)" });
-			twoNodeDelay.then((delayInSeconds) => {
-				globalDelayInSeconds = Number(delayInSeconds);
-			}).then(() => {
-				vscode.window.showInformationMessage(result[0].path);
-				let tracePathA = result[0].path;
-				tracePathA = tracePathA.substring(1);	// remove first slash from path provided by vscode API
-				let arrOfGroupsStream = createJsonStream(tracePathA);
+		if (delayInSeconds === undefined) {
+			return;
+		}
+
+		vscode.window.showInformationMessage(result[0].path);
+
+		let arrOfGroupsStream = createJsonStream(tracePathA);
+		/* arrOfGroups looks like this:
+			{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
+			{key: 1, value: group2}
+		*/
+		let groupQuckPickIndex = 1;
+		// stream the json file
+		arrOfGroupsStream.on('data', (group) => {
+			let groupStringArray: Array<string> = [];
+			// create string array that will be used to display groups for user to select
+			groupStringArray.push(`${groupQuckPickIndex}.\t${group.value.group}`);
+			groupStringArray.push("Go to Next Group");
+			arrOfGroupsStream.pause();
+
+			//create quick pick windows to display the different groups of events
+			// display the quickpick window for event group selection
+			vscode.window.showQuickPick(groupStringArray).then(
+				result => {
+					if (result === undefined) {
+						return result;
+					}
+					if (result === "Go to Next Group") {
+						return result;
+					} else {
+						return group.value.events;
+					}
+				}
+			).then(groupEvents => {
+				if (groupEvents === undefined) {
+					throw new Error("Invalid group of Events");
+				} else if (groupEvents === "Go to Next Group") {
+					groupQuckPickIndex++;
+					arrOfGroupsStream.resume();
+					return groupEvents;
+				}
+
+				let sender = extractNode(groupEvents);
+
+				return [sender, groupEvents];
+			}).then((sender) => {
+				if (sender === "Go to Next Group") {
+					return;
+				}
+				/* sender looks like:
+					[senderName, [event1, event2, ...]]
+				*/
+
+				let arrOfGroupsStreamB = createJsonStream(tracePathB);
 				/* arrOfGroups looks like this:
 					{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
 					{key: 1, value: group2}
 				*/
-				let groupQuckPickIndex = 1;
+				let groupQuckPickIndexB = 1;
 				// stream the json file
-				arrOfGroupsStream.on('data', (group) => {
+				arrOfGroupsStreamB.on('data', (group) => {
 					let groupStringArray: Array<string> = [];
 					// create string array that will be used to display groups for user to select
-					groupStringArray.push(`${groupQuckPickIndex}.\t${group.value.group}`);
+					groupStringArray.push(`${groupQuckPickIndexB}.\t${group.value.group}`);
 					groupStringArray.push("Go to Next Group");
-					arrOfGroupsStream.pause();
+					arrOfGroupsStreamB.pause();
 
 					//create quick pick windows to display the different groups of events
 					// display the quickpick window for event group selection
@@ -91,67 +142,52 @@ export function activate(context: vscode.ExtensionContext) {
 						if (groupEvents === undefined) {
 							throw new Error("Invalid group of Events");
 						} else if (groupEvents === "Go to Next Group") {
-							groupQuckPickIndex++;
-							arrOfGroupsStream.resume();
-							return groupEvents;
-						}
-						txA = extractTxToDataframe(groupEvents);
-						rxA = extractRxToDataframe(groupEvents);
-						console.log(txA);
-						console.log(rxA);
-						return "done";
-					}).then((proceed) => {
-						if (proceed === "Go to Next Group") {
+							groupQuckPickIndexB++;
+							arrOfGroupsStreamB.resume();
 							return;
 						}
-						let tracePathB = result[1].path;
-						tracePathB = tracePathB.substring(1);
-						let arrOfGroupsStreamB = createJsonStream(tracePathB);
-						/* arrOfGroups looks like this:
-							{key: 0, value: group1}, where group1 = {"group" : "SIMULATION 1", "events": [...]}
-							{key: 1, value: group2}
-						*/
-						let groupQuckPickIndexB = 1;
-						// stream the json file
-						arrOfGroupsStreamB.on('data', (group) => {
-							let groupStringArray: Array<string> = [];
-							// create string array that will be used to display groups for user to select
-							groupStringArray.push(`${groupQuckPickIndexB}.\t${group.value.group}`);
-							groupStringArray.push("Go to Next Group");
-							arrOfGroupsStreamB.pause();
 
-							//create quick pick windows to display the different groups of events
-							// display the quickpick window for event group selection
-							vscode.window.showQuickPick(groupStringArray).then(
-								result => {
-									if (result === undefined) {
-										return result;
-									}
-									if (result === "Go to Next Group") {
-										return result;
-									} else {
-										return group.value.events;
-									}
-								}
-							).then(groupEvents => {
-								if (groupEvents === undefined) {
-									throw new Error("Invalid group of Events");
-								} else if (groupEvents === "Go to Next Group") {
-									groupQuckPickIndexB++;
-									arrOfGroupsStreamB.resume();
-									return;
-								}
-								txB = extractTxToDataframe(groupEvents);
-								rxB = extractRxToDataframe(groupEvents);
-								console.log(txB);
-								console.log(rxB);
+						let receiver = extractNode(groupEvents);
+						txA = extractTxToDataframe(receiver, sender[1]);
+						console.log(txA);
+						rxB = extractRxToDataframe(sender[0], groupEvents);
+						console.log(rxB);
 
-								arrOfGroupsStreamB.destroy();
-								arrOfGroupsStream.destroy();
-							});
-						});
-					}).then(() => {
-						//TODO: BLAS txA,rxA and txB, rxB
+						arrOfGroupsStreamB.destroy();
+						arrOfGroupsStream.destroy();
+
+						return [txA, rxB];
+					}).then(async (dataframes) => {
+						if (dataframes === undefined) {
+							throw new Error('tx and rx dataframes are undefined');
+						}
+						let probabilities = vscode.window.showInputBox({ placeHolder: 'Enter probabilites for delay, association and false transmission. E.g 0.0, 1.0, 0.1' });
+						let probString = await probabilities;
+						while (probString === undefined) {
+							probabilities = vscode.window.showInputBox({ placeHolder: 'Enter probabilites for delay, association and false transmission. E.g 0.0, 1.0, 0.1' });
+							probString = await probabilities;
+						}
+						let probStringArr = probString.split(', ');
+						console.log(probStringArr);
+						console.log(dataframes);
+
+						//BLAS txA and rxB
+						let problem: Problem = {
+							tx: dataframes[0],
+							rx: dataframes[1],
+							std: 10.0,
+							delay: (tx, rx) => Number(probStringArr[0]),
+							passoc: (tx, rx) => Number(probStringArr[1]),
+							pfalse: (rx) => Number(probStringArr[2])
+						};
+
+						const assocPromise = assocRxTx(problem);
+						let assocDataframe = await assocPromise;
+						console.log(assocDataframe);
+						let deltaT = assocDataframe[0][2];
+						let clockDrift = deltaT - Number(delayInSeconds);
+						// adjust for clock drift by minusing
+						// TODO: align traceB by minusing clockDrift from its timing
 
 					});
 				});
