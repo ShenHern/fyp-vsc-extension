@@ -53,6 +53,7 @@
     "@types/object-hash": "^3.0.2",
     "@types/stream-json": "^1.7.2",
     "node-fetch": "^3.3.0",
+    "object-hash": "^3.0.0",
     "stream-json": "^1.7.5",
     "ts-gaussian": "^3.0.2"
   }
