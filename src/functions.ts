@@ -683,7 +683,8 @@ export function extractNode(events: Array<{ [header: string]: any }>) {
 // }
 
 /**
- * BLAS function to match tx event with rx event from a pair of nodes
+ * BLAS function to match tx event with rx event from a pair of nodes.
+ * Developer's note: change first state mean to suit problem delay
  * @returns a promise that resolves to
  *      finalAssoc --> 
         [
@@ -692,22 +693,24 @@ export function extractNode(events: Array<{ [header: string]: any }>) {
         ]
  */
 export async function assocRxTx(p: Problem, nhypothesis = 30) {
-    let firstState: State = {
-        score: 0,
-        backlink: undefined,
-        assoc: undefined,
-        i: 0,
-        j: 0,
-        mean: 0,
-        std: p.std
-    };
-
-    // console.log(p.delay(12,12));
-    // console.log(p.passoc(12,12));
-    // console.log(p.pfalse(12));
-    let setOfStates = [firstState];
+    
 
     return import("ts-gaussian").then((gausLib) => {
+        let firstState: State = {
+            score: 0,
+            backlink: undefined,
+            assoc: undefined,
+            i: 0,
+            j: 0,
+            mean: p.mean,
+            std: p.std
+        };
+    
+        // console.log(p.delay(12,12));
+        // console.log(p.passoc(12,12));
+        // console.log(p.pfalse(12));
+        let setOfStates = [firstState];
+
         for (let j = 0; j < p.rx.length; j++) {
             let setOfStatesPlus: State[] = [];
             let rx = p.rx[j][1];
@@ -727,21 +730,25 @@ export async function assocRxTx(p: Problem, nhypothesis = 30) {
 
                 for (let i = 0; i < p.tx.length; i++) {
                     let tx = p.tx[i][1];    //iterate through all tx timings
-                    let deltaTime = rx - tx - p.delay(tx, rx);
+                    let deltaTime = (rx - tx)/1000 - p.delay(tx, rx);
                     if (deltaTime < -3 * state.std) {
                         break;
                     }
 
                     prob = (1 - pfalse) * timeDistribution.pdf(deltaTime) * p.passoc(tx, rx);
-                    setOfStatesPlus.push({
+                    let assocPair = [i, j];
+                    // console.log(assocPair);
+                    let stateToPush = {
                         score: state.score + Math.log10(prob),
                         backlink: state,
-                        assoc: [i, j],
+                        assoc: assocPair,
                         i: i,
                         j: j,
                         mean: deltaTime,
                         std: state.std
-                    });
+                    };
+                    // console.log(stateToPush);
+                    setOfStatesPlus.push(stateToPush);
                 }
             }
             setOfStatesPlus.sort((a, b) => b.score - a.score); //reverse order sorted
@@ -760,6 +767,7 @@ export async function assocRxTx(p: Problem, nhypothesis = 30) {
         }
         let assoc: any[][] = [];    //assoc --> [[i1, j1], [i2, j2]]
         let state: State | undefined = setOfStates[0];
+        console.log(setOfStates);
         while (state !== undefined) {
             if ((state.assoc !== undefined)) {
                 assoc.push(state.assoc);    // state.assoc --> [i, j] where i: tx idx; j: rx idx

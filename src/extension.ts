@@ -175,6 +175,7 @@ export function activate(context: vscode.ExtensionContext) {
 						let problem: Problem = {
 							tx: dataframes[0],
 							rx: dataframes[1],
+							mean: Number(delayInSeconds),
 							std: 10.0,
 							delay: (tx, rx) => Number(probStringArr[0]),
 							passoc: (tx, rx) => Number(probStringArr[1]),
