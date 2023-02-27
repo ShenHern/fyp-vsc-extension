@@ -2,8 +2,9 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent, createJsonStream, extractRxToDataframe, extractTxToDataframe, assocRxTx, extractNode } from './functions';
+import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent, createJsonStream, extractRxToDataframe, extractTxToDataframe, assocRxTx, extractNode, align } from './functions';
 import { Problem } from './types';
+import path = require('path');
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 
@@ -35,7 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 		let ws = vscode.workspace.workspaceFolders;
-		let rootPathStr = ws[0].toString();
+		let rootPathStr = ws[0].uri.path;
 		let od: vscode.OpenDialogOptions = { canSelectFiles: true, canSelectMany: true, canSelectFolders: false, defaultUri: vscode.Uri.file(rootPathStr), filters: { "json": ["json"] } };
 		let p1 = vscode.window.showOpenDialog(od);
 		let txA: any[][];
@@ -45,13 +46,14 @@ export function activate(context: vscode.ExtensionContext) {
 		let result = await p1;
 		console.log(result);
 		if (result === undefined) {
-			throw new Error("File not found!");
+			return;
 		}
 		//extract tx and rx nodes from two trace files; i.e., result[0] and result[1]
 		let tracePathA = result[0].path;
 		tracePathA = tracePathA.substring(1);	// remove first slash from path provided by vscode API
 		let tracePathB = result[1].path;
 		tracePathB = tracePathB.substring(1);
+		let simulationGroup: string;
 
 
 		//ask for delay between the nodes
@@ -135,6 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
 							if (result === "Go to Next Group") {
 								return result;
 							} else {
+								simulationGroup = group.value.group;
 								return group.value.events;
 							}
 						}
@@ -149,9 +152,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 						let receiver = extractNode(groupEvents);
 						txA = extractTxToDataframe(receiver, sender[1]);
-						console.log(txA);
 						rxB = extractRxToDataframe(sender[0], groupEvents);
-						console.log(rxB);
 
 						arrOfGroupsStreamB.destroy();
 						arrOfGroupsStream.destroy();
@@ -185,10 +186,31 @@ export function activate(context: vscode.ExtensionContext) {
 						const assocPromise = assocRxTx(problem);
 						let assocDataframe = await assocPromise;
 						console.log(assocDataframe);
-						let deltaT = assocDataframe[0][2];
+						let deltaT = 0;
+						for (let row of assocDataframe) {
+							deltaT += row[2];
+						}
+						deltaT = Math.floor(deltaT / assocDataframe.length);
 						let clockDrift = deltaT - Number(delayInSeconds);
-						// adjust for clock drift by minusing
-						// TODO: align traceB by minusing clockDrift from its timing
+						// align traceB by minusing clockDrift from its timing
+
+						let wsPath = ws[0].uri.path.substring(1);
+
+						if (group.value.group === simulationGroup) {
+							let groupEvents = group.value.events;
+							console.log("Checking for directory " + path.join(wsPath, "aligned"));
+							let exists = fs.existsSync(path.join(wsPath, "aligned"));
+							console.log(exists);
+							// align traceB by minusing clockDrift from its timing
+							if (exists === false) {
+								fs.mkdirSync(path.join(wsPath, "aligned"));
+							}
+							//align nodeB
+							align(groupEvents, clockDrift, wsPath, tracePathB);
+							// copy traceA to the folder 'aligned/'
+							let fileName = tracePathA.substring(tracePathA.lastIndexOf('/') + 1);
+							fs.copyFile(tracePathA, path.join(wsPath, "aligned/") + fileName, () => { });
+						}
 
 					});
 				});

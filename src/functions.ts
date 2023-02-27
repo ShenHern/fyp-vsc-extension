@@ -5,6 +5,7 @@ import { parser } from 'stream-json';
 import { pick } from 'stream-json/filters/Pick';
 import { streamArray } from 'stream-json/streamers/StreamArray';
 import { sha1 } from 'object-hash';
+import path = require("path");
 
 /**
  * A function to split the component into useful parts.
@@ -693,7 +694,7 @@ export function extractNode(events: Array<{ [header: string]: any }>) {
         ]
  */
 export async function assocRxTx(p: Problem, nhypothesis = 30) {
-    
+
 
     return import("ts-gaussian").then((gausLib) => {
         let firstState: State = {
@@ -705,7 +706,7 @@ export async function assocRxTx(p: Problem, nhypothesis = 30) {
             mean: p.mean,
             std: p.std
         };
-    
+
         // console.log(p.delay(12,12));
         // console.log(p.passoc(12,12));
         // console.log(p.pfalse(12));
@@ -730,7 +731,7 @@ export async function assocRxTx(p: Problem, nhypothesis = 30) {
 
                 for (let i = 0; i < p.tx.length; i++) {
                     let tx = p.tx[i][1];    //iterate through all tx timings
-                    let deltaTime = (rx - tx)/1000 - p.delay(tx, rx);
+                    let deltaTime = (rx - tx) - p.delay(tx, rx);
                     if (deltaTime < -3 * state.std) {
                         break;
                     }
@@ -806,4 +807,31 @@ function isDuplicate(state: State, setOfStates: State[]): boolean {
         }
     }
     return false;
+}
+
+export function align(groupEvents: Array<{ [header: string]: any }>, clockDrift: number, wsPath: string, tracePathB: string) {
+    let fileName = tracePathB.substring(tracePathB.lastIndexOf('/') + 1);
+    let savePath = path.join(wsPath, "aligned/");
+    console.log(savePath+fileName);
+    fs.open(savePath + fileName, 'w', (err, fd) => {
+        fs.writeSync(fd, `{"version": "1.0","group":"EventTrace","events":[\n`);
+        fs.writeSync(fd, `    {"group":"SIMULATION 1","events":[\n`);
+        for (let i = 0; i < groupEvents.length - 1; i++) {
+            //for each event; where event is {time, component, stimulus, response}
+            let event = groupEvents[i];
+            if ("time" in event) {
+                let time = event["time"];
+                let alignedEvent = `     {"time":${time - clockDrift}, "component":"${event.component}", "threadID":"${event.threadID}", "stimulus":${JSON.stringify(event.stimulus)}, "response":${JSON.stringify(event.response)}},\n`;
+                fs.writeSync(fd, alignedEvent);
+            }
+        }
+        let lastEvent = groupEvents[groupEvents.length - 1];
+        if ("time" in lastEvent) {
+            let time = lastEvent["time"];
+            let alignedEvent = `     {"time":${time - clockDrift}, "component":"${lastEvent.component}", "threadID":"${lastEvent.threadID}", "stimulus":${JSON.stringify(lastEvent.stimulus)}, "response":${JSON.stringify(lastEvent.response)}}\n`;
+            fs.writeSync(fd, alignedEvent);
+        }
+        fs.writeSync(fd, `    ]}\n]}`);
+        fs.close(fd);
+    });
 }
