@@ -1,4 +1,3 @@
-import { EdgeData, NodeData } from "reaflow";
 import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent } from './functions';
 import { TreeCache, TreeNode } from "./types";
 
