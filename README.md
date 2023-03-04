@@ -20,6 +20,9 @@ Briefly put, the following are required:
 Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
 
 This extension contributes the following settings:
+* `unettrace.solve`: Allows user to choose 2 individual trace.json files and align their timings for clock drift.
+
+* `unettrace.combine`: Allows user to combine the aligned trace.json files; also includes insertion of halfduplexmodem events within the combined trace.json file.
 
 * `unettrace.trace`: Allows user to choose a trace.json file that is used for visualisation of message transfers.
 
@@ -65,3 +68,37 @@ You can author your README using Visual Studio Code. Here are some useful editor
 * [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
 
 **Enjoy!**
+
+# User Guide
+To generate a `trace.json` file fit for visiualization, there are 2 steps that need to be taken.
+##  "UnetTrace: Align trace.json Timings of 2 Nodes"
+- Press `CTRL + SHIFT + P` to open up the command palette and search for "UnetTrace: Align trace.json Timings of 2 Nodes"
+
+- A popup window will appear; go ahead and select the two trace files for alignment
+
+![image.info](./images/1.png)
+
+- Then enter the propogation delay in **SECONDS** between the two nodes into the prompt window
+
+![image.info](./images/2.png)
+
+- Choose the simulation/experiment group to be used from the prompt window for each node
+
+![image.info](./images/3.png)
+
+- Enter the probabilites for delay, association, and false transmission respectively. They will be used for matching TX and RX events.
+
+![image.info](./images/4.png)
+
+- A folder called `aligned/` will be created; the aligned trace files are stored here.
+
+![image.info](./images/5.png)
+
+## "UnetTrace: Combine Aligned trace.json Files"
+- Press `CTRL + SHIFT + P` to open up the command palette and search for "UnetTrace: Combine Aligned trace.json Files"
+
+- The individual trace files in `aligned/` are merged and halfduplexmodem events inserted for TX/RX events.
+
+- The resulting trace file is saved as `aligned/traceFINAL.json`
+
+![image.info](./images/6.png)

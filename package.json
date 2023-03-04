@@ -9,6 +9,10 @@
   "categories": [
     "Other"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShenHern/fyp-vsc-extension"
+  },
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
