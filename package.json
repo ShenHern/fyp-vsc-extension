@@ -14,16 +14,16 @@
   "contributes": {
     "commands": [
       {
-        "command": "unettrace.helloWorld",
-        "title": "UnetTrace: Hello World!"
-      },
-      {
         "command": "unettrace.solve",
-        "title": "UnetTrace: Solve Tx-Rx"
+        "title": "UnetTrace: Align trace.json Timings of 2 Nodes"
       },
       {
         "command": "unettrace.trace",
         "title": "UnetTrace: Create Visualisation from Trace File"
+      },
+      {
+        "command": "unettrace.combine",
+        "title": "UnetTrace: Combine Aligned trace.json Files"
       }
     ]
   },

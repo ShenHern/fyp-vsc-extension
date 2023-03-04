@@ -104,7 +104,7 @@ function prettyMessage(msg: { [header: string]: string; }) {
 
 
 /**
- * Public function to analyse a group of events from a session and groups them into different traces.
+ * Public function to analyse a group of events from a session and groups them into different traces. Credit: https://github.com/org-arl/unet-contrib/blob/master/tools/viztrace/viztrace.jl
  * @param events group of events from a session
  * @returns list of tuples of size equal to number of traces e.g. [(time, desc, traceOfEvents), ...]
  */
@@ -622,7 +622,7 @@ export function extractTxToDataframe(receiver: string, groupEvents: any) {
         //for each event; where event is {time, component, stimulus, response}
         if ("response" in event) {
             let response = event["response"];
-            // TODO: include stimulus.sender in trace.json  && response.receiver === receiver
+            // TODO: response.receiver === receiver
             if (response.clazz === "org.arl.unet.phy.TxFrameReq") {
                 //extract out the ID and timing
                 let txID = response.messageID;
@@ -646,7 +646,7 @@ export function extractRxToDataframe(sender: string, groupEvents: any) {
         //for each event; where event is {time, component, stimulus, response}
         if ("stimulus" in event) {
             let stimulus = event["stimulus"];
-            // TODO: include stimulus.sender in trace.json  && stimulus.sender === sender
+            // TODO: stimulus.sender === sender
             if (stimulus.clazz === "org.arl.unet.phy.RxFrameNtf") {
                 //extract out the ID and timing
                 let rxID = stimulus.messageID;
@@ -690,7 +690,7 @@ export function noDupes(dataFrame: any[][]) {
 }
 
 /**
- * BLAS function to match tx event with rx event from a pair of nodes.
+ * BLAS function to match tx event with rx event from a pair of nodes. Credit: https://github.com/org-arl/ARLToolkit.jl/blob/master/src/BLAS.jl
  * @returns a promise that resolves to
  *      finalAssoc --> 
         [
@@ -908,12 +908,14 @@ export function half(combinedFilePath: string) {
     let file = fs.readFileSync(combinedFilePath, {encoding: 'utf8'});
     let obj = JSON.parse(file);
     let events = obj.events[0].events;
+    let evcopy = [];
     let length = events.length;
     var i;
     var j;
-    for (i = 0; i <= length; i++) {
+    for (i = 0; i < length; i++) {
+        evcopy.push(events[i]);
         if (events[i].response.clazz.includes('TxFrame')) {
-            for (j = i; j <= length; j++) {
+            for (j = i; j < length; j++) {
                 if (events[j].stimulus.clazz.includes('RxFrame')) {
                     let sender = events[i];
                     let receive = events[j];
@@ -967,13 +969,13 @@ export function half(combinedFilePath: string) {
                     txnotif.response.performative = "INFORM";
                     txnotif.response.sender = "phy";
                     txnotif.response.recipient = sender.stimulus.recipient;
-                    events.splice(i + 1, 0, inform, agree, txnotif, rxnotif);
+                    evcopy.push(inform, agree, txnotif, rxnotif);
                     break;
                 }
             }
         }
     }
-    obj.events[0].events = events;
+    obj.events[0].events = evcopy;
     fs.writeFileSync(combinedFilePath, JSON.stringify(obj, null, 4));
     console.log(obj);
 };

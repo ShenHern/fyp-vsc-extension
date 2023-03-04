@@ -9,6 +9,7 @@ import path = require('path');
 // your extension is activated the very first time the command is executed
 
 let currentPanel: vscode.WebviewPanel | undefined = undefined;
+let globalSimGroup: string | undefined = undefined;
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -19,10 +20,26 @@ export function activate(context: vscode.ExtensionContext) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('unettrace.helloWorld', () => {
+	let disposable = vscode.commands.registerCommand('unettrace.combine', async () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from VSCode!');
+		
+		if (vscode.workspace.workspaceFolders === undefined) {
+			vscode.window.showWarningMessage("Please open a workspace folder");
+			return;
+		}
+
+		let ws = vscode.workspace.workspaceFolders;
+		let wsPath = ws[0].uri.path;
+		wsPath = wsPath.substring(1);
+
+		while (globalSimGroup === undefined) {
+			globalSimGroup = await vscode.window.showInputBox({placeHolder: "Enter name of simulation/experiment group, e.g. 'SIMULATION 1'"});
+		}
+
+		let mergePath = merge(path.join(wsPath, "aligned"), globalSimGroup.toUpperCase());
+
+		half(mergePath);
 	});
 
 	let disposable2 = vscode.commands.registerCommand('unettrace.solve', async () => {
@@ -139,6 +156,7 @@ export function activate(context: vscode.ExtensionContext) {
 								return result;
 							} else {
 								simulationGroup = group.value.group;
+								globalSimGroup = group.value.group;
 								return group.value.events;
 							}
 						}
@@ -216,11 +234,6 @@ export function activate(context: vscode.ExtensionContext) {
 							let fileName = tracePathA.substring(tracePathA.lastIndexOf('/') + 1);
 							fs.copyFileSync(tracePathA, path.join(wsPath, "aligned/") + fileName);
 
-							// const raw = fs.readFileSync(path.join(wsPath, "aligned/") + 'traceB.json', {encoding: "utf8"});
-							// JSON.parse(raw);
-
-							let mergedPath = merge(path.join(wsPath, "aligned"), simulationGroup);
-							half(mergedPath);
 						}
 
 					});
