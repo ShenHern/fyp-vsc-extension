@@ -2,14 +2,13 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { noDupes, analyse, mermaid, sequence, sortTreeByTime, createHTMLContent, createJsonStream, extractRxToDataframe, extractTxToDataframe, assocRxTx, extractNode, align, merge, half } from './functions';
+import { noDupes, analyse, mermaid, sequence, sortTreeByTime, createHTMLContent, createJsonStream, extractRxToDataframe, extractTxToDataframe, assocRxTx, extractNode, align, merge, half, copyGroup } from './functions';
 import { Problem } from './types';
 import path = require('path');
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 
 let currentPanel: vscode.WebviewPanel | undefined = undefined;
-let globalSimGroup: string | undefined = undefined;
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -33,11 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
 		let wsPath = ws[0].uri.path;
 		wsPath = wsPath.substring(1);
 
-		while (globalSimGroup === undefined) {
-			globalSimGroup = await vscode.window.showInputBox({placeHolder: "Enter name of simulation/experiment group, e.g. 'SIMULATION 1'"});
-		}
-
-		let mergePath = merge(path.join(wsPath, "aligned"), globalSimGroup.toUpperCase());
+		let mergePath = merge(path.join(wsPath, "aligned"));
 
 		half(mergePath);
 	});
@@ -108,7 +103,7 @@ export function activate(context: vscode.ExtensionContext) {
 					if (result === "Go to Next Group") {
 						return result;
 					} else {
-						return group.value.events;
+						return [group.value.group, group.value.events];
 					}
 				}
 			).then(groupEvents => {
@@ -119,10 +114,12 @@ export function activate(context: vscode.ExtensionContext) {
 					arrOfGroupsStream.resume();
 					return groupEvents;
 				}
+				let simGroup = groupEvents[0];
+				let wsPath = ws[0].uri.path.substring(1);
+				let sender = extractNode(groupEvents[1]);
+				copyGroup(groupEvents[1], wsPath, tracePathA, simGroup);
 
-				let sender = extractNode(groupEvents);
-
-				return [sender, groupEvents];
+				return [sender, groupEvents[1]];
 			}).then((sender) => {
 				if (sender === "Go to Next Group") {
 					return;
@@ -156,7 +153,6 @@ export function activate(context: vscode.ExtensionContext) {
 								return result;
 							} else {
 								simulationGroup = group.value.group;
-								globalSimGroup = group.value.group;
 								return group.value.events;
 							}
 						}
@@ -232,7 +228,6 @@ export function activate(context: vscode.ExtensionContext) {
 							align(groupEvents, clockDrift, wsPath, tracePathB, simulationGroup);
 							// copy traceA to the folder 'aligned/'
 							let fileName = tracePathA.substring(tracePathA.lastIndexOf('/') + 1);
-							fs.copyFileSync(tracePathA, path.join(wsPath, "aligned/") + fileName);
 
 						}
 

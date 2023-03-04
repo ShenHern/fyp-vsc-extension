@@ -814,6 +814,14 @@ function isDuplicate(state: State, setOfStates: State[]): boolean {
     return false;
 }
 
+/**
+ * function that aligns a trace file's timing for clock drift; resulting file is saved in 'aligned/' folder
+ * @param groupEvents the list of events for a simulation/experiment group
+ * @param clockDrift the clockdrift in milliseconds
+ * @param wsPath workspace path
+ * @param tracePathB path to the second trace file
+ * @param simulationGroup the simulation group
+ */
 export function align(groupEvents: Array<{ [header: string]: any }>, clockDrift: number, wsPath: string, tracePathB: string, simulationGroup: string) {
     let fileName = tracePathB.substring(tracePathB.lastIndexOf('/') + 1);
     let savePath = path.join(wsPath, "aligned/");
@@ -841,6 +849,40 @@ export function align(groupEvents: Array<{ [header: string]: any }>, clockDrift:
     fs.close(fd);
 }
 
+/**
+ * function to copy over the baseline file when aligning for clock drift; resulting file is saved in 'aligned/' folder
+ * @param groupEvents the list of events for a simulation/experiment group
+ * @param wsPath workspace path
+ * @param tracePathA path to the trace file
+ * @param simulationGroup the simulation group
+ */
+export function copyGroup(groupEvents: Array<{ [header: string]: any }>, wsPath: string, tracePathA: string, simulationGroup: string) {
+    let fileName = tracePathA.substring(tracePathA.lastIndexOf('/') + 1);
+    let savePath = path.join(wsPath, "aligned/");
+    console.log(savePath + fileName);
+    let fd = fs.openSync(savePath + fileName, 'w');
+
+    fs.writeSync(fd, `{"version": "1.0","group":"EventTrace","events":[\n`);
+    fs.writeSync(fd, `    {"group":"${simulationGroup}","events":[\n`);
+    for (let i = 0; i < groupEvents.length - 1; i++) {
+        //for each event; where event is {time, component, stimulus, response}
+        let event = groupEvents[i];
+        if ("time" in event) {
+            let time = event["time"];
+            let alignedEvent = `     {"time":${time}, "component":"${event.component}", "threadID":"${event.threadID}", "stimulus":${JSON.stringify(event.stimulus)}, "response":${JSON.stringify(event.response)}},\n`;
+            fs.writeSync(fd, alignedEvent);
+        }
+    }
+    let lastEvent = groupEvents[groupEvents.length - 1];
+    if ("time" in lastEvent) {
+        let time = lastEvent["time"];
+        let alignedEvent = `     {"time":${time}, "component":"${lastEvent.component}", "threadID":"${lastEvent.threadID}", "stimulus":${JSON.stringify(lastEvent.stimulus)}, "response":${JSON.stringify(lastEvent.response)}}\n`;
+        fs.writeSync(fd, alignedEvent);
+    }
+    fs.writeSync(fd, `    ]}\n]}`);
+    fs.close(fd);
+}
+
 
 /**
  * function to merge individual aligned trace files
@@ -848,13 +890,13 @@ export function align(groupEvents: Array<{ [header: string]: any }>, clockDrift:
  * @param simulationGroup the name of the simulation group that the user chose
  * @returns the path of where the merged trace file is saved e.g. D:\unet-3.4.0\aligned\traceFINAL.json
  */
-export function merge(alignedPath: string, simulationGroup: string) {
+export function merge(alignedPath: string) {
 
     let final = {
         version: '1.0',
         group: 'EventTrace',
         events: [{
-            group: simulationGroup,
+            group: 'SIMULATION 1',
             events: []
         }]
     };
@@ -867,9 +909,8 @@ export function merge(alignedPath: string, simulationGroup: string) {
         let raw = fs.readFileSync(`${alignedPath}/${file}`, { encoding: "utf8" });
         let obj = JSON.parse(raw);
         obj.events.forEach((group: { [header: string]: any }) => {
-            if (group.group === simulationGroup) {
-                final.events[0].events = final.events[0].events.concat(group.events);
-            }
+            final.events[0].group =  obj.events[0].group;
+            final.events[0].events = final.events[0].events.concat(group.events);
         });
     }
     final.events[0].events.sort((a: { [header: string]: any }, b: { [header: string]: any }) => {
@@ -905,7 +946,7 @@ export function half(combinedFilePath: string) {
     let rxnotif = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" } };
     //const files = './tests/test.json';
     //let obj = JSON.parse(files);
-    let file = fs.readFileSync(combinedFilePath, {encoding: 'utf8'});
+    let file = fs.readFileSync(combinedFilePath, { encoding: 'utf8' });
     let obj = JSON.parse(file);
     let events = obj.events[0].events;
     let evcopy = [];
