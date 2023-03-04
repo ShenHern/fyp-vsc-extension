@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent, createJsonStream, extractRxToDataframe, extractTxToDataframe, assocRxTx, extractNode, align } from './functions';
+import { noDupes, analyse, mermaid, sequence, sortTreeByTime, createHTMLContent, createJsonStream, extractRxToDataframe, extractTxToDataframe, assocRxTx, extractNode, align, merge, half } from './functions';
 import { Problem } from './types';
 import path = require('path');
 // this method is called when your extension is activated
@@ -64,6 +64,7 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
+		let delayInMilliseconds = Number(delayInSeconds) * 1000;
 		vscode.window.showInformationMessage(result[0].path);
 
 		let arrOfGroupsStream = createJsonStream(tracePathA);
@@ -151,8 +152,12 @@ export function activate(context: vscode.ExtensionContext) {
 						}
 
 						let receiver = extractNode(groupEvents);
-						txA = extractTxToDataframe(receiver, sender[1]);
-						rxB = extractRxToDataframe(sender[0], groupEvents);
+						txA = noDupes(extractTxToDataframe(receiver, sender[1]));
+						rxB = noDupes(extractRxToDataframe(sender[0], groupEvents));
+
+						console.log('txA and rxB incoming...');
+						console.log(txA);
+						console.log(rxB);
 
 						arrOfGroupsStreamB.destroy();
 						arrOfGroupsStream.destroy();
@@ -176,7 +181,7 @@ export function activate(context: vscode.ExtensionContext) {
 						let problem: Problem = {
 							tx: dataframes[0],
 							rx: dataframes[1],
-							mean: Number(delayInSeconds),
+							mean: delayInMilliseconds,
 							std: 10.0,
 							delay: (tx, rx) => Number(probStringArr[0]),
 							passoc: (tx, rx) => Number(probStringArr[1]),
@@ -191,7 +196,7 @@ export function activate(context: vscode.ExtensionContext) {
 							deltaT += row[2];
 						}
 						deltaT = Math.floor(deltaT / assocDataframe.length);
-						let clockDrift = deltaT - Number(delayInSeconds);
+						let clockDrift = deltaT - delayInMilliseconds;
 						// align traceB by minusing clockDrift from its timing
 
 						let wsPath = ws[0].uri.path.substring(1);
@@ -206,10 +211,16 @@ export function activate(context: vscode.ExtensionContext) {
 								fs.mkdirSync(path.join(wsPath, "aligned"));
 							}
 							//align nodeB
-							align(groupEvents, clockDrift, wsPath, tracePathB);
+							align(groupEvents, clockDrift, wsPath, tracePathB, simulationGroup);
 							// copy traceA to the folder 'aligned/'
 							let fileName = tracePathA.substring(tracePathA.lastIndexOf('/') + 1);
-							fs.copyFile(tracePathA, path.join(wsPath, "aligned/") + fileName, () => { });
+							fs.copyFileSync(tracePathA, path.join(wsPath, "aligned/") + fileName);
+
+							// const raw = fs.readFileSync(path.join(wsPath, "aligned/") + 'traceB.json', {encoding: "utf8"});
+							// JSON.parse(raw);
+
+							let mergedPath = merge(path.join(wsPath, "aligned"), simulationGroup);
+							half(mergedPath);
 						}
 
 					});

@@ -667,25 +667,30 @@ export function extractNode(events: Array<{ [header: string]: any }>) {
 
 /**
  * function that removes duplicate entries in rx/tx dataframes
- * @param data 
+ * @param data a dataframe of rx or tx ids and timings i.e., output from extractToDataFrame functions.
+ * @returns a dataframe with no duplicate IDs
  */
-// function noDupes(data: any[][]) {
-//     data
-//         .map(function (item) {
-//             return JSON.stringify(item);
-//         })
-//         .reduce(function (out, current) {
-//             if (out.indexOf(current) === -1) {out.push(current);}
-//             return out;
-//         }, [])
-//         .map(function (item) {
-//             return JSON.parse(item);
-//         });
-// }
+export function noDupes(dataFrame: any[][]) {
+    let seen: any = [];
+    let dataFrameToReturn: any[][] = [];
+    dataFrame.forEach((row) => {
+        let id = row[0];
+
+        if (seen.includes(id)) {
+            let idx = dataFrame.indexOf(row);
+            dataFrame.splice(idx, 1);
+            return;
+        }
+
+        seen.push(id);
+        dataFrameToReturn.push(row);
+    });
+
+    return dataFrameToReturn;
+}
 
 /**
  * BLAS function to match tx event with rx event from a pair of nodes.
- * Developer's note: change first state mean to suit problem delay
  * @returns a promise that resolves to
  *      finalAssoc --> 
         [
@@ -809,29 +814,166 @@ function isDuplicate(state: State, setOfStates: State[]): boolean {
     return false;
 }
 
-export function align(groupEvents: Array<{ [header: string]: any }>, clockDrift: number, wsPath: string, tracePathB: string) {
+export function align(groupEvents: Array<{ [header: string]: any }>, clockDrift: number, wsPath: string, tracePathB: string, simulationGroup: string) {
     let fileName = tracePathB.substring(tracePathB.lastIndexOf('/') + 1);
     let savePath = path.join(wsPath, "aligned/");
-    console.log(savePath+fileName);
-    fs.open(savePath + fileName, 'w', (err, fd) => {
-        fs.writeSync(fd, `{"version": "1.0","group":"EventTrace","events":[\n`);
-        fs.writeSync(fd, `    {"group":"SIMULATION 1","events":[\n`);
-        for (let i = 0; i < groupEvents.length - 1; i++) {
-            //for each event; where event is {time, component, stimulus, response}
-            let event = groupEvents[i];
-            if ("time" in event) {
-                let time = event["time"];
-                let alignedEvent = `     {"time":${time - clockDrift}, "component":"${event.component}", "threadID":"${event.threadID}", "stimulus":${JSON.stringify(event.stimulus)}, "response":${JSON.stringify(event.response)}},\n`;
-                fs.writeSync(fd, alignedEvent);
-            }
-        }
-        let lastEvent = groupEvents[groupEvents.length - 1];
-        if ("time" in lastEvent) {
-            let time = lastEvent["time"];
-            let alignedEvent = `     {"time":${time - clockDrift}, "component":"${lastEvent.component}", "threadID":"${lastEvent.threadID}", "stimulus":${JSON.stringify(lastEvent.stimulus)}, "response":${JSON.stringify(lastEvent.response)}}\n`;
+    console.log(savePath + fileName);
+    let fd = fs.openSync(savePath + fileName, 'w');
+
+    fs.writeSync(fd, `{"version": "1.0","group":"EventTrace","events":[\n`);
+    fs.writeSync(fd, `    {"group":"${simulationGroup}","events":[\n`);
+    for (let i = 0; i < groupEvents.length - 1; i++) {
+        //for each event; where event is {time, component, stimulus, response}
+        let event = groupEvents[i];
+        if ("time" in event) {
+            let time = event["time"];
+            let alignedEvent = `     {"time":${time - clockDrift}, "component":"${event.component}", "threadID":"${event.threadID}", "stimulus":${JSON.stringify(event.stimulus)}, "response":${JSON.stringify(event.response)}},\n`;
             fs.writeSync(fd, alignedEvent);
         }
-        fs.writeSync(fd, `    ]}\n]}`);
-        fs.close(fd);
-    });
+    }
+    let lastEvent = groupEvents[groupEvents.length - 1];
+    if ("time" in lastEvent) {
+        let time = lastEvent["time"];
+        let alignedEvent = `     {"time":${time - clockDrift}, "component":"${lastEvent.component}", "threadID":"${lastEvent.threadID}", "stimulus":${JSON.stringify(lastEvent.stimulus)}, "response":${JSON.stringify(lastEvent.response)}}\n`;
+        fs.writeSync(fd, alignedEvent);
+    }
+    fs.writeSync(fd, `    ]}\n]}`);
+    fs.close(fd);
 }
+
+
+/**
+ * function to merge individual aligned trace files
+ * @param alignedPath the path to the folder containing all aligned trace files
+ * @param simulationGroup the name of the simulation group that the user chose
+ * @returns the path of where the merged trace file is saved e.g. D:\unet-3.4.0\aligned\traceFINAL.json
+ */
+export function merge(alignedPath: string, simulationGroup: string) {
+
+    let final = {
+        version: '1.0',
+        group: 'EventTrace',
+        events: [{
+            group: simulationGroup,
+            events: []
+        }]
+    };
+
+    let files = fs.readdirSync(alignedPath);
+    for (let file of files) {
+        if (file === 'traceFINAL.json') {
+            continue;
+        }
+        let raw = fs.readFileSync(`${alignedPath}/${file}`, { encoding: "utf8" });
+        let obj = JSON.parse(raw);
+        obj.events.forEach((group: { [header: string]: any }) => {
+            if (group.group === simulationGroup) {
+                final.events[0].events = final.events[0].events.concat(group.events);
+            }
+        });
+    }
+    final.events[0].events.sort((a: { [header: string]: any }, b: { [header: string]: any }) => {
+        return a.time - b.time;
+    });
+    fs.writeFileSync(alignedPath + '/traceFINAL.json', JSON.stringify(final, null, 4));
+    // console.log(final);
+    return alignedPath + '/traceFINAL.json';
+};
+
+function makeid(length: number) {
+    let result = '';
+    let characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let charactersLength = characters.length;
+    let counter = 0;
+    while (counter < length) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        counter += 1;
+    }
+    return result;
+}
+
+
+/**
+ * inserts halfduplex event into combined trace file
+ * @param combinedFilePath the path of the trace file with all combined events after alignment
+ */
+export function half(combinedFilePath: string) {
+
+    let inform = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "recipient": "" } };
+    let agree = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "recipient": "" } };
+    let txnotif = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" } };
+    let rxnotif = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" } };
+    //const files = './tests/test.json';
+    //let obj = JSON.parse(files);
+    let file = fs.readFileSync(combinedFilePath, {encoding: 'utf8'});
+    let obj = JSON.parse(file);
+    let events = obj.events[0].events;
+    let length = events.length;
+    var i;
+    var j;
+    for (i = 0; i <= length; i++) {
+        if (events[i].response.clazz.includes('TxFrame')) {
+            for (j = i; j <= length; j++) {
+                if (events[j].stimulus.clazz.includes('RxFrame')) {
+                    let sender = events[i];
+                    let receive = events[j];
+                    inform.time = sender.time + 3;
+                    inform.component = "phy::org.arl.unet.sim.HalfDuplexModem/" + sender.component.substr(sender.component.length - 1);
+                    inform.threadID = sender.response.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe;
+                    inform.stimulus.clazz = "org.arl.unet.phy.TxFrameReq";
+                    inform.stimulus.messageID = sender.response.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe
+                    inform.stimulus.performative = "REQUEST";
+                    inform.stimulus.sender = sender.stimulus.recipient;
+                    inform.stimulus.recipient = "phy";
+                    inform.response.clazz = "org.arl.unet.sim.HalfDuplexModem$TX";
+                    inform.response.messageID = makeid(8) + "-" + makeid(4) + "-" + makeid(4) + "-" + makeid(4) + "-" + makeid(11);//9913082f-0891-40be-8b8a-c62cf68063ae
+                    inform.response.performative = "INFORM";
+                    inform.response.recipient = "phy";
+                    agree.time = sender.time + 6;
+                    agree.component = "phy::org.arl.unet.sim.HalfDuplexModem/" + sender.component.substr(sender.component.length - 1);
+                    agree.threadID = sender.response.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe;
+                    agree.stimulus.clazz = "org.arl.unet.phy.TxFrameReq";
+                    agree.stimulus.messageID = sender.response.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe
+                    agree.stimulus.performative = "REQUEST";
+                    agree.stimulus.sender = sender.stimulus.recipient;
+                    agree.stimulus.recipient = "phy";
+                    agree.response.clazz = "org.arl.fjage.Message";
+                    agree.response.messageID = inform.response.messageID;//9913082f-0891-40be-8b8a-c62cf68063ae
+                    agree.response.performative = "AGREE";
+                    agree.response.recipient = "phy";
+                    rxnotif.time = sender.time + 12;
+                    rxnotif.component = "phy::org.arl.unet.sim.HalfDuplexModem/" + receive.component.substr(receive.component.length - 1);
+                    rxnotif.threadID = inform.response.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe;
+                    rxnotif.stimulus.clazz = "org.arl.unet.sim.HalfDuplexModem$TX";
+                    rxnotif.stimulus.messageID = inform.response.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe
+                    rxnotif.stimulus.performative = "INFORM";
+                    rxnotif.stimulus.sender = "phy";
+                    rxnotif.stimulus.recipient = "phy";
+                    rxnotif.response.clazz = "org.arl.unet.phy.RxFrameNtf";
+                    rxnotif.response.messageID = receive.threadID;//12995b36-b42d-4277-bd2d-9936ee4a2d29
+                    rxnotif.response.performative = "INFORM";
+                    rxnotif.response.sender = "phy";
+                    rxnotif.response.recipient = "#phy__ntf";
+                    txnotif.time = sender.time + 9;
+                    txnotif.component = "phy::org.arl.unet.sim.HalfDuplexModem/" + sender.component.substr(sender.component.length - 1);
+                    txnotif.threadID = sender.response.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe;
+                    txnotif.stimulus.clazz = "org.arl.unet.sim.HalfDuplexModem$TX";
+                    txnotif.stimulus.messageID = inform.response.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe
+                    txnotif.stimulus.performative = "INFORM";
+                    txnotif.stimulus.sender = "phy";
+                    txnotif.stimulus.recipient = "phy";
+                    txnotif.response.clazz = "org.arl.unet.phy.TxFrameNtf";
+                    txnotif.response.messageID = makeid(8) + "-" + makeid(4) + "-" + makeid(4) + "-" + makeid(4) + "-" + makeid(11);//c26d1081-48fd-4afe-af0d-426e5e6c7d21
+                    txnotif.response.performative = "INFORM";
+                    txnotif.response.sender = "phy";
+                    txnotif.response.recipient = sender.stimulus.recipient;
+                    events.splice(i + 1, 0, inform, agree, txnotif, rxnotif);
+                    break;
+                }
+            }
+        }
+    }
+    obj.events[0].events = events;
+    fs.writeFileSync(combinedFilePath, JSON.stringify(obj, null, 4));
+    console.log(obj);
+};
