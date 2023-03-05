@@ -909,7 +909,7 @@ export function merge(alignedPath: string) {
         let raw = fs.readFileSync(`${alignedPath}/${file}`, { encoding: "utf8" });
         let obj = JSON.parse(raw);
         obj.events.forEach((group: { [header: string]: any }) => {
-            final.events[0].group =  obj.events[0].group;
+            final.events[0].group = obj.events[0].group;
             final.events[0].events = final.events[0].events.concat(group.events);
         });
     }
@@ -956,7 +956,7 @@ export function half(combinedFilePath: string) {
     for (i = 0; i < length; i++) {
         evcopy.push(events[i]);
         if (events[i].response.clazz.includes('TxFrame')) {
-            for (j = i; j < length; j++) {
+            for (j = i; j < i + 6; j++) {
                 if (events[j].stimulus.clazz.includes('RxFrame')) {
                     let sender = events[i];
                     let receive = events[j];
