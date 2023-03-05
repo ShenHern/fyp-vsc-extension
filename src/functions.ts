@@ -940,10 +940,6 @@ function makeid(length: number) {
  */
 export function half(combinedFilePath: string) {
 
-    let inform = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "recipient": "" } };
-    let agree = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "recipient": "" } };
-    let txnotif = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" } };
-    let rxnotif = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" } };
     //const files = './tests/test.json';
     //let obj = JSON.parse(files);
     let file = fs.readFileSync(combinedFilePath, { encoding: 'utf8' });
@@ -958,6 +954,11 @@ export function half(combinedFilePath: string) {
         if (events[i].response.clazz.includes('TxFrame')) {
             for (j = i; j < i + 6; j++) {
                 if (events[j].stimulus.clazz.includes('RxFrame')) {
+                    let inform = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "recipient": "" } };
+                    let agree = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "recipient": "" } };
+                    let txnotif = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" } };
+                    let rxnotif = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" } };
+                
                     let sender = events[i];
                     let receive = events[j];
                     inform.time = sender.time + 3;
@@ -1011,6 +1012,7 @@ export function half(combinedFilePath: string) {
                     txnotif.response.sender = "phy";
                     txnotif.response.recipient = sender.stimulus.recipient;
                     evcopy.push(inform, agree, txnotif, rxnotif);
+                    // console.log(sender);
                     break;
                 }
             }
