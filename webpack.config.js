@@ -2,10 +2,8 @@
 //@ts-check
 "use strict";
 const path = require("path");
-
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
-
 /** @type WebpackConfig */
 const extensionConfig = {
   target: "node",
@@ -22,7 +20,6 @@ const extensionConfig = {
   },
   resolve: {
     extensions: [".ts", ".js"],
-    fallback: { "stream": require.resolve("stream-browserify") }
   },
   module: {
     rules: [
@@ -40,7 +37,7 @@ const extensionConfig = {
   devtool: "nosources-source-map",
   infrastructureLogging: {
     level: "log",
-  },
+  }
 };
 
 module.exports = extensionConfig;

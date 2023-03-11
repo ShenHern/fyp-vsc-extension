@@ -38,10 +38,11 @@ export interface TreeNode {
 export interface Problem {
     tx: any[][];
     rx: any[][];
+    mean: number;
     std: number;
     delay(tx: number, rx:number): number;
     passoc(tx:number, rx:number): number;
-    passoc(rx:number): number;
+    pfalse(rx:number): number;
 }
 /**
  * @param score: score of each state
