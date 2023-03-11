@@ -117,6 +117,15 @@ export function activate(context: vscode.ExtensionContext) {
 				let simGroup = groupEvents[0];
 				let wsPath = ws[0].uri.path.substring(1);
 				let sender = extractNode(groupEvents[1]);
+
+				console.log("Checking for directory " + path.join(wsPath, "aligned"));
+				let exists = fs.existsSync(path.join(wsPath, "aligned"));
+				console.log(exists);
+				// align traceB by minusing clockDrift from its timing
+				if (exists === false) {
+					fs.mkdirSync(path.join(wsPath, "aligned"));
+				}
+
 				copyGroup(groupEvents[1], wsPath, tracePathA, simGroup);
 
 				return [sender, groupEvents[1]];
@@ -217,13 +226,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 						if (group.value.group === simulationGroup) {
 							let groupEvents = group.value.events;
-							console.log("Checking for directory " + path.join(wsPath, "aligned"));
-							let exists = fs.existsSync(path.join(wsPath, "aligned"));
-							console.log(exists);
-							// align traceB by minusing clockDrift from its timing
-							if (exists === false) {
-								fs.mkdirSync(path.join(wsPath, "aligned"));
-							}
+							
 							//align nodeB
 							align(groupEvents, clockDrift, wsPath, tracePathB, simulationGroup);
 							// copy traceA to the folder 'aligned/'
