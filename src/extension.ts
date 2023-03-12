@@ -210,8 +210,11 @@ export function activate(context: vscode.ExtensionContext) {
 							passoc: (tx, rx) => Number(probStringArr[1]),
 							pfalse: (rx) => Number(probStringArr[2])
 						};
-
-						const assocPromise = assocRxTx(problem);
+						//weird hack to use dynamic import of ES module in commonjs context (it prevents 'import' being transpiled to 'require')
+						const assoc = assocRxTx;
+						const assocPromise = eval(`import('ts-gaussian').then(gausLib => {
+							return assoc(gausLib, problem);
+						})`);
 						let assocDataframe = await assocPromise;
 						console.log(assocDataframe);
 						let deltaT = 0;
