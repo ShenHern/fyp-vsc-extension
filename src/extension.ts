@@ -118,10 +118,10 @@ export function activate(context: vscode.ExtensionContext) {
 				let wsPath = ws[0].uri.path.substring(1);
 				let sender = extractNode(groupEvents[1]);
 
+				// checking for 'aligned/' dir
 				console.log("Checking for directory " + path.join(wsPath, "aligned"));
 				let exists = fs.existsSync(path.join(wsPath, "aligned"));
 				console.log(exists);
-				// align traceB by minusing clockDrift from its timing
 				if (exists === false) {
 					fs.mkdirSync(path.join(wsPath, "aligned"));
 				}
@@ -215,6 +215,7 @@ export function activate(context: vscode.ExtensionContext) {
 						const assocPromise = eval(`import('ts-gaussian').then(gausLib => {
 							return assoc(gausLib, problem);
 						})`);
+						//finding average clock drift from all associations
 						let assocDataframe = await assocPromise;
 						console.log(assocDataframe);
 						let deltaT = 0;
@@ -223,7 +224,6 @@ export function activate(context: vscode.ExtensionContext) {
 						}
 						deltaT = Math.floor(deltaT / assocDataframe.length);
 						let clockDrift = deltaT - delayInMilliseconds;
-						// align traceB by minusing clockDrift from its timing
 
 						let wsPath = ws[0].uri.path.substring(1);
 
@@ -232,9 +232,6 @@ export function activate(context: vscode.ExtensionContext) {
 							
 							//align nodeB
 							align(groupEvents, clockDrift, wsPath, tracePathB, simulationGroup);
-							// copy traceA to the folder 'aligned/'
-							let fileName = tracePathA.substring(tracePathA.lastIndexOf('/') + 1);
-
 						}
 
 					});
