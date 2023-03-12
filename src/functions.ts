@@ -691,7 +691,7 @@ export function noDupes(dataFrame: any[][]) {
 
 /**
  * BLAS function to match tx event with rx event from a pair of nodes. Credit: https://github.com/org-arl/ARLToolkit.jl/blob/master/src/BLAS.jl
- * @returns a promise that resolves to
+ * @returns a dataframe consisting of associated events
  *      finalAssoc --> 
         [
         [[txID, timing], [rxID, timing], deltaT]],
