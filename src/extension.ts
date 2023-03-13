@@ -76,7 +76,16 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
+		//ask for std dev between the nodes
+		const twoNodeStd = vscode.window.showInputBox({ placeHolder: "Please enter std deviation of delay between 2 nodes (in seconds)" });
+		let stdInSeconds = await twoNodeStd;
+
+		if (stdInSeconds === undefined) {
+			return;
+		}
+
 		let delayInMilliseconds = Number(delayInSeconds) * 1000;
+		let stdInMilliseconds = Number(stdInSeconds) * 1000;
 		vscode.window.showInformationMessage(result[0].path);
 
 		let arrOfGroupsStream = createJsonStream(tracePathA);
@@ -205,18 +214,19 @@ export function activate(context: vscode.ExtensionContext) {
 							tx: dataframes[0],
 							rx: dataframes[1],
 							mean: delayInMilliseconds,
-							std: 10.0,
+							std: stdInMilliseconds,
 							delay: (tx, rx) => Number(probStringArr[0]),
 							passoc: (tx, rx) => Number(probStringArr[1]),
 							pfalse: (rx) => Number(probStringArr[2])
 						};
 						//weird hack to use dynamic import of ES module in commonjs context (it prevents 'import' being transpiled to 'require')
-						const assoc = assocRxTx;
-						const assocPromise = eval(`import('ts-gaussian').then(gausLib => {
-							return assoc(gausLib, problem);
-						})`);
+						// const assoc = assocRxTx;
+						// var eval2 = eval;
+						// const assocPromise = eval2(`import('ts-gaussian').then(gausLib => {
+						// 	return assoc(gausLib, problem);
+						// })`);
 						//finding average clock drift from all associations
-						let assocDataframe = await assocPromise;
+						let assocDataframe = assocRxTx(problem);
 						console.log(assocDataframe);
 						let deltaT = 0;
 						for (let row of assocDataframe) {

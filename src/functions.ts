@@ -6,6 +6,7 @@ import { pick } from 'stream-json/filters/Pick';
 import { streamArray } from 'stream-json/streamers/StreamArray';
 import { sha1 } from 'object-hash';
 import path = require("path");
+import gaussian = require("gaussian");
 
 /**
  * A function to split the component into useful parts.
@@ -698,7 +699,7 @@ export function noDupes(dataFrame: any[][]) {
         [[txID, timing], [rxID, timing], deltaT]],...
         ]
  */
-export async function assocRxTx(gausLib: any, p: Problem, nhypothesis = 30) {
+export function assocRxTx(p: Problem, nhypothesis = 30) {
     let firstState: State = {
         score: 0,
         backlink: undefined,
@@ -718,7 +719,7 @@ export async function assocRxTx(gausLib: any, p: Problem, nhypothesis = 30) {
         let setOfStatesPlus: State[] = [];
         let rx = p.rx[j][1];
         for (let state of setOfStates) {
-            let timeDistribution = new gausLib.Gaussian(state.mean, state.std ** 2); // Gaussian distribution here expects variance which is std^2
+            let timeDistribution = gaussian(state.mean, state.std ** 2); // Gaussian distribution here expects variance which is std^2
             let pfalse = p.pfalse(rx);
             let prob = pfalse * timeDistribution.pdf(state.mean);
             setOfStatesPlus.push({
