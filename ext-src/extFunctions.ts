@@ -6,22 +6,9 @@ import { pick } from 'stream-json/filters/Pick';
 import { streamArray } from 'stream-json/streamers/StreamArray';
 import * as fs from 'fs';
 import * as path from "path";
-import { Problem, State } from './ext-types';
+import { Problem, State } from './extTypes';
 import { sha1 } from 'object-hash';
-
-
-export function createJsonStream(tracePath: string) {
-    const pipeline = fs.createReadStream(tracePath).pipe(parser());
-    let groupsOfEvents = pipeline.pipe(pick({ filter: 'events' }));
-    let arrOfGroupsStream = groupsOfEvents.pipe(streamArray());
-    return arrOfGroupsStream;
-}
-
-export function extractNode(events: Array<{ [header: string]: any }>) {
-    let components = splitComponents(events[0].component);
-    let node = components[2];
-    return node;
-}
+import gaussian from "gaussian";
 
 function splitComponents(s: string) {
     const regexName = /\w.*(?=::)/;
@@ -47,57 +34,11 @@ function splitComponents(s: string) {
     return [compName, compClazz, compNode];
 }
 
-/**
- * function to copy over the baseline file when aligning for clock drift; resulting file is saved in 'aligned/' folder
- * @param groupEvents the list of events for a simulation/experiment group
- * @param wsPath workspace path
- * @param tracePathA path to the trace file
- * @param simulationGroup the simulation group
- */
-export function copyGroup(groupEvents: Array<{ [header: string]: any }>, wsPath: string, tracePathA: string, simulationGroup: string) {
-    let fileName = tracePathA.substring(tracePathA.lastIndexOf('/') + 1);
-    let savePath = path.join(wsPath, "aligned/");
-    console.log(savePath + fileName);
-    let fd = fs.openSync(savePath + fileName, 'w');
-
-    fs.writeSync(fd, `{"version": "1.0","group":"EventTrace","events":[\n`);
-    fs.writeSync(fd, `    {"group":"${simulationGroup}","events":[\n`);
-    for (let i = 0; i < groupEvents.length - 1; i++) {
-        //for each event; where event is {time, component, stimulus, response}
-        let event = groupEvents[i];
-        if ("time" in event) {
-            let time = event["time"];
-            let alignedEvent = `     {"time":${time}, "component":"${event.component}", "threadID":"${event.threadID}", "stimulus":${JSON.stringify(event.stimulus)}, "response":${JSON.stringify(event.response)}},\n`;
-            fs.writeSync(fd, alignedEvent);
-        }
-    }
-    let lastEvent = groupEvents[groupEvents.length - 1];
-    if ("time" in lastEvent) {
-        let time = lastEvent["time"];
-        let alignedEvent = `     {"time":${time}, "component":"${lastEvent.component}", "threadID":"${lastEvent.threadID}", "stimulus":${JSON.stringify(lastEvent.stimulus)}, "response":${JSON.stringify(lastEvent.response)}}\n`;
-        fs.writeSync(fd, alignedEvent);
-    }
-    fs.writeSync(fd, `    ]}\n]}`);
-    fs.close(fd);
-}
-
-export function noDupes(dataFrame: any[][]) {
-    let seen: any = [];
-    let dataFrameToReturn: any[][] = [];
-    dataFrame.forEach((row) => {
-        let id = row[0];
-
-        if (seen.includes(id)) {
-            let idx = dataFrame.indexOf(row);
-            dataFrame.splice(idx, 1);
-            return;
-        }
-
-        seen.push(id);
-        dataFrameToReturn.push(row);
-    });
-
-    return dataFrameToReturn;
+export function createJsonStream(tracePath: string) {
+    const pipeline = fs.createReadStream(tracePath).pipe(parser());
+    let groupsOfEvents = pipeline.pipe(pick({ filter: 'events' }));
+    let arrOfGroupsStream = groupsOfEvents.pipe(streamArray());
+    return arrOfGroupsStream;
 }
 
 /**
@@ -148,6 +89,158 @@ export function extractRxToDataframe(sender: string, groupEvents: any) {
     return rxDataframe;
 }
 
+export function extractNode(events: Array<{ [header: string]: any }>) {
+    let components = splitComponents(events[0].component);
+    let node = components[2];
+    return node;
+}
+
+/**
+ * function that removes duplicate entries in rx/tx dataframes
+ * @param data a dataframe of rx or tx ids and timings i.e., output from extractToDataFrame functions.
+ * @returns a dataframe with no duplicate IDs
+ */
+export function noDupes(dataFrame: any[][]) {
+    let seen: any = [];
+    let dataFrameToReturn: any[][] = [];
+    dataFrame.forEach((row) => {
+        let id = row[0];
+
+        if (seen.includes(id)) {
+            let idx = dataFrame.indexOf(row);
+            dataFrame.splice(idx, 1);
+            return;
+        }
+
+        seen.push(id);
+        dataFrameToReturn.push(row);
+    });
+
+    return dataFrameToReturn;
+}
+
+/**
+ * BLAS function to match tx event with rx event from a pair of nodes. Credit: https://github.com/org-arl/ARLToolkit.jl/blob/master/src/BLAS.jl
+ * @returns a dataframe consisting of associated events
+ *      finalAssoc --> 
+        [
+        [[txID, timing], [rxID, timing], deltaT]],
+        [[txID, timing], [rxID, timing], deltaT]],...
+        ]
+ */
+export function assocRxTx(p: Problem, nhypothesis = 30) {
+    let firstState: State = {
+        score: 0,
+        backlink: undefined,
+        assoc: undefined,
+        i: 0,
+        j: 0,
+        mean: p.mean,
+        std: p.std
+    };
+
+    // console.log(p.delay(12,12));
+    // console.log(p.passoc(12,12));
+    // console.log(p.pfalse(12));
+    let setOfStates = [firstState];
+
+    for (let j = 0; j < p.rx.length; j++) {
+        let setOfStatesPlus: State[] = [];
+        let rx = p.rx[j][1];
+        for (let state of setOfStates) {
+            let timeDistribution = gaussian(state.mean, state.std ** 2); // Gaussian distribution here expects variance which is std^2
+            let pfalse = p.pfalse(rx);
+            let prob = pfalse * timeDistribution.pdf(state.mean);
+            setOfStatesPlus.push({
+                score: state.score + Math.log10(prob),
+                backlink: state,
+                assoc: undefined,
+                i: state.i,
+                j: j,
+                mean: state.mean,
+                std: state.std
+            });
+
+            for (let i = 0; i < p.tx.length; i++) {
+                let tx = p.tx[i][1];    //iterate through all tx timings
+                let deltaTime = (rx - tx) - p.delay(tx, rx);
+                if (deltaTime < -3 * state.std) {
+                    break;
+                }
+
+                prob = (1 - pfalse) * timeDistribution.pdf(deltaTime) * p.passoc(tx, rx);
+                let assocPair = [i, j];
+                // console.log(assocPair);
+                let stateToPush = {
+                    score: state.score + Math.log10(prob),
+                    backlink: state,
+                    assoc: assocPair,
+                    i: i,
+                    j: j,
+                    mean: deltaTime,
+                    std: state.std
+                };
+                // console.log(stateToPush);
+                setOfStatesPlus.push(stateToPush);
+            }
+        }
+        setOfStatesPlus.sort((a, b) => b.score - a.score); //reverse order sorted
+        if (setOfStates[0].score === Infinity) {
+            console.log(`Ran out of possibilities for RX[${j}]!`);
+            console.log(setOfStatesPlus);
+            break;
+        }
+
+        setOfStatesPlus.filter(s => s.score >= setOfStatesPlus[0].score - 1);
+        setOfStatesPlus.filter(s => !isDuplicate(s, setOfStatesPlus));
+        if (setOfStatesPlus.length > nhypothesis) {
+            setOfStatesPlus = setOfStatesPlus.slice(0, nhypothesis);
+        }
+        setOfStates = setOfStatesPlus;
+    }
+    let assoc: any[][] = [];    //assoc --> [[i1, j1], [i2, j2]]
+    let state: State | undefined = setOfStates[0];
+    console.log(setOfStates);
+    while (state !== undefined) {
+        if ((state.assoc !== undefined)) {
+            assoc.push(state.assoc);    // state.assoc --> [i, j] where i: tx idx; j: rx idx
+        }
+        state = state.backlink;
+    }
+    assoc.sort((a, b) => a[0] - b[0]);  // sort by tx idx
+    let finalAssoc: any[][] = [];
+    for (let pair of assoc) {
+        let tx = p.tx[pair[0]];
+        let rx = p.rx[pair[1]];
+        let deltaT = rx[1] - tx[1] - p.delay(tx[1], rx[1]);
+        let row = [tx, rx, deltaT];
+        finalAssoc.push(row);
+    }
+    /* finalAssoc --> 
+    [[[txID, timing], [rxID, timing], deltaT]],
+    [[txID, timing], [rxID, timing], deltaT]],...
+    ]*/
+    return finalAssoc;
+
+}
+
+function isDuplicate(state: State, setOfStates: State[]): boolean {
+    for (let s of setOfStates) {
+        if (s === state) {
+            continue;
+        } else if (s.i !== state.i || s.j !== state.j || s.assoc !== state.assoc) {
+            continue;
+        } else if (state.score > s.score) {
+            continue;
+        } else if (state.score < s.score) {
+            return true;
+        } else if (sha1(state) < sha1(s)) {
+            return true;    //if scores are same, discard state if it has a lower hash value than s. Arbitrary tiebreaker
+        }
+    }
+    return false;
+}
+
 /**
  * function that aligns a trace file's timing for clock drift; resulting file is saved in 'aligned/' folder
  * @param groupEvents the list of events for a simulation/experiment group
@@ -184,129 +277,39 @@ export function align(groupEvents: Array<{ [header: string]: any }>, clockDrift:
 }
 
 /**
- * BLAS function to match tx event with rx event from a pair of nodes. Credit: https://github.com/org-arl/ARLToolkit.jl/blob/master/src/BLAS.jl
- * @returns a promise that resolves to
- *      finalAssoc --> 
-        [
-        [[txID, timing], [rxID, timing], deltaT]],
-        [[txID, timing], [rxID, timing], deltaT]],...
-        ]
-*/
-export async function assocRxTx(p: Problem, nhypothesis = 30) {
+ * function to copy over the baseline file when aligning for clock drift; resulting file is saved in 'aligned/' folder
+ * @param groupEvents the list of events for a simulation/experiment group
+ * @param wsPath workspace path
+ * @param tracePathA path to the trace file
+ * @param simulationGroup the simulation group
+ */
+export function copyGroup(groupEvents: Array<{ [header: string]: any }>, wsPath: string, tracePathA: string, simulationGroup: string) {
+    let fileName = tracePathA.substring(tracePathA.lastIndexOf('/') + 1);
+    let savePath = path.join(wsPath, "aligned/");
+    console.log(savePath + fileName);
+    let fd = fs.openSync(savePath + fileName, 'w');
 
-
-    return import("ts-gaussian").then((gausLib) => {
-        let firstState: State = {
-            score: 0,
-            backlink: undefined,
-            assoc: undefined,
-            i: 0,
-            j: 0,
-            mean: p.mean,
-            std: p.std
-        };
-
-        // console.log(p.delay(12,12));
-        // console.log(p.passoc(12,12));
-        // console.log(p.pfalse(12));
-        let setOfStates = [firstState];
-
-        for (let j = 0; j < p.rx.length; j++) {
-            let setOfStatesPlus: State[] = [];
-            let rx = p.rx[j][1];
-            for (let state of setOfStates) {
-                let timeDistribution = new gausLib.Gaussian(state.mean, state.std ** 2); // Gaussian distribution here expects variance which is std^2
-                let pfalse = p.pfalse(rx);
-                let prob = pfalse * timeDistribution.pdf(state.mean);
-                setOfStatesPlus.push({
-                    score: state.score + Math.log10(prob),
-                    backlink: state,
-                    assoc: undefined,
-                    i: state.i,
-                    j: j,
-                    mean: state.mean,
-                    std: state.std
-                });
-
-                for (let i = 0; i < p.tx.length; i++) {
-                    let tx = p.tx[i][1];    //iterate through all tx timings
-                    let deltaTime = (rx - tx) - p.delay(tx, rx);
-                    if (deltaTime < -3 * state.std) {
-                        break;
-                    }
-
-                    prob = (1 - pfalse) * timeDistribution.pdf(deltaTime) * p.passoc(tx, rx);
-                    let assocPair = [i, j];
-                    // console.log(assocPair);
-                    let stateToPush = {
-                        score: state.score + Math.log10(prob),
-                        backlink: state,
-                        assoc: assocPair,
-                        i: i,
-                        j: j,
-                        mean: deltaTime,
-                        std: state.std
-                    };
-                    // console.log(stateToPush);
-                    setOfStatesPlus.push(stateToPush);
-                }
-            }
-            setOfStatesPlus.sort((a, b) => b.score - a.score); //reverse order sorted
-            if (setOfStates[0].score === Infinity) {
-                console.log(`Ran out of possibilities for RX[${j}]!`);
-                console.log(setOfStatesPlus);
-                break;
-            }
-
-            setOfStatesPlus.filter(s => s.score >= setOfStatesPlus[0].score - 1);
-            setOfStatesPlus.filter(s => !isDuplicate(s, setOfStatesPlus));
-            if (setOfStatesPlus.length > nhypothesis) {
-                setOfStatesPlus = setOfStatesPlus.slice(0, nhypothesis);
-            }
-            setOfStates = setOfStatesPlus;
-        }
-        let assoc: any[][] = [];    //assoc --> [[i1, j1], [i2, j2]]
-        let state: State | undefined = setOfStates[0];
-        console.log(setOfStates);
-        while (state !== undefined) {
-            if ((state.assoc !== undefined)) {
-                assoc.push(state.assoc);    // state.assoc --> [i, j] where i: tx idx; j: rx idx
-            }
-            state = state.backlink;
-        }
-        assoc.sort((a, b) => a[0] - b[0]);  // sort by tx idx
-        let finalAssoc: any[][] = [];
-        for (let pair of assoc) {
-            let tx = p.tx[pair[0]];
-            let rx = p.rx[pair[1]];
-            let deltaT = rx[1] - tx[1] - p.delay(tx[1], rx[1]);
-            let row = [tx, rx, deltaT];
-            finalAssoc.push(row);
-        }
-        /* finalAssoc --> 
-        [[[txID, timing], [rxID, timing], deltaT]],
-        [[txID, timing], [rxID, timing], deltaT]],...
-        ]*/
-        return finalAssoc;
-    });
-}
-
-function isDuplicate(state: State, setOfStates: State[]): boolean {
-    for (let s of setOfStates) {
-        if (s === state) {
-            continue;
-        } else if (s.i !== state.i || s.j !== state.j || s.assoc !== state.assoc) {
-            continue;
-        } else if (state.score > s.score) {
-            continue;
-        } else if (state.score < s.score) {
-            return true;
-        } else if (sha1(state) < sha1(s)) {
-            return true;    //if scores are same, discard state if it has a lower hash value than s. Arbitrary tiebreaker
+    fs.writeSync(fd, `{"version": "1.0","group":"EventTrace","events":[\n`);
+    fs.writeSync(fd, `    {"group":"${simulationGroup}","events":[\n`);
+    for (let i = 0; i < groupEvents.length - 1; i++) {
+        //for each event; where event is {time, component, stimulus, response}
+        let event = groupEvents[i];
+        if ("time" in event) {
+            let time = event["time"];
+            let alignedEvent = `     {"time":${time}, "component":"${event.component}", "threadID":"${event.threadID}", "stimulus":${JSON.stringify(event.stimulus)}, "response":${JSON.stringify(event.response)}},\n`;
+            fs.writeSync(fd, alignedEvent);
         }
     }
-    return false;
+    let lastEvent = groupEvents[groupEvents.length - 1];
+    if ("time" in lastEvent) {
+        let time = lastEvent["time"];
+        let alignedEvent = `     {"time":${time}, "component":"${lastEvent.component}", "threadID":"${lastEvent.threadID}", "stimulus":${JSON.stringify(lastEvent.stimulus)}, "response":${JSON.stringify(lastEvent.response)}}\n`;
+        fs.writeSync(fd, alignedEvent);
+    }
+    fs.writeSync(fd, `    ]}\n]}`);
+    fs.close(fd);
 }
+
 
 /**
  * function to merge individual aligned trace files
@@ -357,6 +360,7 @@ function makeid(length: number) {
     return result;
 }
 
+
 /**
  * inserts halfduplex event into combined trace file
  * @param combinedFilePath the path of the trace file with all combined events after alignment
@@ -381,7 +385,7 @@ export function half(combinedFilePath: string) {
                     let agree = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "recipient": "" } };
                     let txnotif = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" } };
                     let rxnotif = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" } };
-                
+
                     let sender = events[i];
                     let receive = events[j];
                     inform.time = sender.time + 3;

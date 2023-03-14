@@ -1,5 +1,4 @@
-import { analyse, mermaid, sequence, sortTreeByTime, createHTMLContent } from './functions';
-import { TreeCache, TreeNode } from "./types";
+import { analyse, sequence, sortTreeByTime } from './functions';
 
 export const parser = (jsonStr: string) => {
   const json = JSON.parse(jsonStr);
