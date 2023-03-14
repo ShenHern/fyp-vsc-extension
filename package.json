@@ -11,7 +11,8 @@
   ],
   "activationEvents": [
     "onCommand:fyp-react-webappbuilder.start",
-    "onCommand:fyp-react-webappbuilder.combine"
+    "onCommand:fyp-react-webappbuilder.combine",
+    "onCommand:fyp-react-webappbuilder.solve"
   ],
   "main": "./build/ext-src/extension.js",
   "contributes": {
