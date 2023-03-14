@@ -17,24 +17,22 @@ const path = require("path");
 const extFunctions_1 = require("./extFunctions");
 const fs = require("fs");
 function activate(context) {
-    const disposable1 = vscode.commands.registerCommand('fyp-react-webappbuilder.combine', () => __awaiter(this, void 0, void 0, function* () {
-        // The code you place here will be executed every time your command is executed
-        // Display a message box to the user
-        if (vscode.workspace.workspaceFolders === undefined) {
-            vscode.window.showWarningMessage("Please open a workspace folder");
-            return;
-        }
-        let ws = vscode.workspace.workspaceFolders;
-        let wsPath = ws[0].uri.path;
-        wsPath = wsPath.substring(1);
-        let mergePath = (0, extFunctions_1.merge)(path.join(wsPath, "aligned"));
-        (0, extFunctions_1.half)(mergePath);
+    const disposableCombine = vscode.commands.registerCommand("fyp-react-webappbuilder.combine", () => __awaiter(this, void 0, void 0, function* () {
+        initCombine(context);
     }));
-    const disposable2 = vscode.commands.registerCommand("fyp-react-webappbuilder.solve", () => __awaiter(this, void 0, void 0, function* () {
-        // The code you place here will be executed every time your command is executed
-        // Display a message box to the user
-        //TODO: open two files and run tx-rx matching for nodes AB then swap and run tx-rx for BA
-        //return the matched threaIDs
+    const disposableSolve = vscode.commands.registerCommand("fyp-react-webappbuilder.solve", () => __awaiter(this, void 0, void 0, function* () {
+        initSolve(context);
+    }));
+    const disposableSidePreview = vscode.commands.registerCommand("fyp-react-webappbuilder.start", () => __awaiter(this, void 0, void 0, function* () {
+        initReactApp(context);
+    }));
+    context.subscriptions.push(disposableSidePreview);
+    context.subscriptions.push(disposableCombine);
+    context.subscriptions.push(disposableSolve);
+}
+exports.activate = activate;
+function initSolve(context) {
+    return __awaiter(this, void 0, void 0, function* () {
         if (vscode.workspace.workspaceFolders === undefined) {
             vscode.window.showWarningMessage("Please open a workspace folder");
             return;
@@ -64,6 +62,14 @@ function activate(context) {
         if (delayInSeconds === undefined) {
             return;
         }
+        //ask for std dev between the nodes
+        const twoNodeStd = vscode.window.showInputBox({ placeHolder: "Please enter std deviation of delay between 2 nodes (in seconds)" });
+        let stdInSeconds = yield twoNodeStd;
+        if (stdInSeconds === undefined) {
+            return;
+        }
+        let delayInMilliseconds = Number(delayInSeconds) * 1000;
+        let stdInMilliseconds = Number(stdInSeconds) * 1000;
         vscode.window.showInformationMessage(result[0].path);
         let arrOfGroupsStream = (0, extFunctions_1.createJsonStream)(tracePathA);
         /* arrOfGroups looks like this:
@@ -88,7 +94,7 @@ function activate(context) {
                     return result;
                 }
                 else {
-                    return group.value.events;
+                    return [group.value.group, group.value.events];
                 }
             }).then(groupEvents => {
                 if (groupEvents === undefined) {
@@ -99,8 +105,18 @@ function activate(context) {
                     arrOfGroupsStream.resume();
                     return groupEvents;
                 }
-                let sender = (0, extFunctions_1.extractNode)(groupEvents);
-                return [sender, groupEvents];
+                let simGroup = groupEvents[0];
+                let wsPath = ws[0].uri.path.substring(1);
+                let sender = (0, extFunctions_1.extractNode)(groupEvents[1]);
+                // checking for 'aligned/' dir
+                console.log("Checking for directory " + path.join(wsPath, "aligned"));
+                let exists = fs.existsSync(path.join(wsPath, "aligned"));
+                console.log(exists);
+                if (exists === false) {
+                    fs.mkdirSync(path.join(wsPath, "aligned"));
+                }
+                (0, extFunctions_1.copyGroup)(groupEvents[1], wsPath, tracePathA, simGroup);
+                return [sender, groupEvents[1]];
             }).then((sender) => {
                 if (sender === "Go to Next Group") {
                     return;
@@ -144,8 +160,11 @@ function activate(context) {
                             return;
                         }
                         let receiver = (0, extFunctions_1.extractNode)(groupEvents);
-                        txA = (0, extFunctions_1.extractTxToDataframe)(receiver, sender[1]);
-                        rxB = (0, extFunctions_1.extractRxToDataframe)(sender[0], groupEvents);
+                        txA = (0, extFunctions_1.noDupes)((0, extFunctions_1.extractTxToDataframe)(receiver, sender[1]));
+                        rxB = (0, extFunctions_1.noDupes)((0, extFunctions_1.extractRxToDataframe)(sender[0], groupEvents));
+                        console.log('txA and rxB incoming...');
+                        console.log(txA);
+                        console.log(rxB);
                         arrOfGroupsStreamB.destroy();
                         arrOfGroupsStream.destroy();
                         return [txA, rxB];
@@ -166,51 +185,52 @@ function activate(context) {
                         let problem = {
                             tx: dataframes[0],
                             rx: dataframes[1],
-                            mean: Number(delayInSeconds),
-                            std: 10.0,
+                            mean: delayInMilliseconds,
+                            std: stdInMilliseconds,
                             delay: (tx, rx) => Number(probStringArr[0]),
                             passoc: (tx, rx) => Number(probStringArr[1]),
                             pfalse: (rx) => Number(probStringArr[2])
                         };
-                        const assocPromise = (0, extFunctions_1.assocRxTx)(problem);
-                        let assocDataframe = yield assocPromise;
+                        //weird hack to use dynamic import of ES module in commonjs context (it prevents 'import' being transpiled to 'require')
+                        // const assoc = assocRxTx;
+                        // var eval2 = eval;
+                        // const assocPromise = eval2(`import('ts-gaussian').then(gausLib => {
+                        // 	return assoc(gausLib, problem);
+                        // })`);
+                        //finding average clock drift from all associations
+                        let assocDataframe = (0, extFunctions_1.assocRxTx)(problem);
                         console.log(assocDataframe);
                         let deltaT = 0;
                         for (let row of assocDataframe) {
                             deltaT += row[2];
                         }
                         deltaT = Math.floor(deltaT / assocDataframe.length);
-                        let clockDrift = deltaT - Number(delayInSeconds);
-                        // align traceB by minusing clockDrift from its timing
+                        let clockDrift = deltaT - delayInMilliseconds;
                         let wsPath = ws[0].uri.path.substring(1);
                         if (group.value.group === simulationGroup) {
                             let groupEvents = group.value.events;
-                            console.log("Checking for directory " + path.join(wsPath, "aligned"));
-                            let exists = fs.existsSync(path.join(wsPath, "aligned"));
-                            console.log(exists);
-                            // align traceB by minusing clockDrift from its timing
-                            if (exists === false) {
-                                fs.mkdirSync(path.join(wsPath, "aligned"));
-                            }
                             //align nodeB
                             (0, extFunctions_1.align)(groupEvents, clockDrift, wsPath, tracePathB, simulationGroup);
-                            // copy traceA to the folder 'aligned/'
-                            let fileName = tracePathA.substring(tracePathA.lastIndexOf('/') + 1);
-                            fs.copyFile(tracePathA, path.join(wsPath, "aligned/") + fileName, () => { });
                         }
                     }));
                 });
             });
         });
-    }));
-    const disposableSidePreview = vscode.commands.registerCommand("fyp-react-webappbuilder.start", () => __awaiter(this, void 0, void 0, function* () {
-        initReactApp(context);
-    }));
-    context.subscriptions.push(disposableSidePreview);
-    context.subscriptions.push(disposable1);
-    context.subscriptions.push(disposable2);
+    });
 }
-exports.activate = activate;
+function initCombine(context) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (vscode.workspace.workspaceFolders === undefined) {
+            vscode.window.showWarningMessage("Please open a workspace folder");
+            return;
+        }
+        let ws = vscode.workspace.workspaceFolders;
+        let wsPath = ws[0].uri.path;
+        wsPath = wsPath.substring(1);
+        let mergePath = (0, extFunctions_1.merge)(path.join(wsPath, "aligned"));
+        (0, extFunctions_1.half)(mergePath);
+    });
+}
 function initReactApp(context) {
     return __awaiter(this, void 0, void 0, function* () {
         let currentTextEditor = vscode.window.visibleTextEditors[0];

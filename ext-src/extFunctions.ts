@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from "path";
 import { Problem, State } from './extTypes';
 import { sha1 } from 'object-hash';
-import gaussian from "gaussian";
+var gaussian = require('gaussian');
 
 function splitComponents(s: string) {
     const regexName = /\w.*(?=::)/;
@@ -148,6 +148,7 @@ export function assocRxTx(p: Problem, nhypothesis = 30) {
         let setOfStatesPlus: State[] = [];
         let rx = p.rx[j][1];
         for (let state of setOfStates) {
+            
             let timeDistribution = gaussian(state.mean, state.std ** 2); // Gaussian distribution here expects variance which is std^2
             let pfalse = p.pfalse(rx);
             let prob = pfalse * timeDistribution.pdf(state.mean);

@@ -59,6 +59,7 @@
     "eject": "react-scripts eject"
   },
   "devDependencies": {
+    "@types/gaussian": "^1.2.0",
     "@types/glob": "^7.2.0",
     "@types/mocha": "^9.1.1",
     "@types/node": "16.x",
@@ -72,7 +73,7 @@
     "@vscode/test-electron": "^2.1.5",
     "assert": "^2.0.0",
     "buffer": "^6.0.3",
-    "eslint": "^8.20.0",
+    "eslint": "^8.36.0",
     "glob": "^8.0.3",
     "mocha": "^10.0.0",
     "nodemon": "^2.0.20",
@@ -89,6 +90,7 @@
     "@projectstorm/react-diagrams": "^6.7.4",
     "@types/react-cytoscapejs": "^1.2.2",
     "cytoscape": "^3.23.0",
+    "gaussian": "^1.3.0",
     "object-hash": "^3.0.0",
     "react": "^18.2.0",
     "react-cytoscapejs": "^2.0.0",
@@ -100,7 +102,6 @@
     "stream-json": "^1.7.5",
     "styled-components": "^5.3.6",
     "terser": "^5.15.0",
-    "ts-gaussian": "^3.0.2",
     "yarn": "^1.22.19",
     "zustand": "^4.1.1"
   },
