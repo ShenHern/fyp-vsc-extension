@@ -71,3 +71,46 @@ tr:nth-child(even) {
   text-align: center;
   border-radius: 5px;
 }
+
+.box {
+  text-align: center;
+}
+.box div {
+  width: 200px;
+  display: inline-block;
+  align-items: center;
+  text-align: center;
+  color: #000000;
+  font-family: arial, sans-serif;
+}
+
+.input {
+  margin-bottom: 15px;
+  align-items: center;
+}
+
+.solve p {
+  color: white
+}
+
+.Button {
+  text-align: center;
+  align-items: center;
+}
+
+.error {
+
+  color: #D16969;
+  align-items: center;
+}
+
+.pass {
+
+  color: white;
+  align-items: center;
+}
+
+.head {
+  color: white;
+  align-items: center;
+}
