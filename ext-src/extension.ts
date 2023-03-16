@@ -260,31 +260,23 @@ async function initSolve(context: vscode.ExtensionContext) {
 		vscode.window.showWarningMessage("Please open a workspace folder");
 		return;
 	}
-	let ws = vscode.workspace.workspaceFolders;
-	let rootPathStr = ws[0].uri.path;
-	let od: vscode.OpenDialogOptions = { canSelectFiles: true, canSelectMany: true, canSelectFolders: false, defaultUri: vscode.Uri.file(rootPathStr), filters: { "json": ["json"] } };
-	let p1 = vscode.window.showOpenDialog(od);
-	let result = await p1;
-	console.log(result);
-	if (result === undefined) {
-		return;
-	}
-	//extract tx and rx nodes from two trace files; i.e., result[0] and result[1]
-	let tracePathA = result[0].path;
-	tracePathA = tracePathA.substring(1);	// remove first slash from path provided by vscode API
-	let tracePathB = result[1].path;
-	tracePathB = tracePathB.substring(1);
-
-	const traceDataA = fs.readFileSync(tracePathA, 'utf8');
-	const traceDataB = fs.readFileSync(tracePathB, 'utf8');
 
 	panel.webview.postMessage({
-		command: 'solve',
-		traceA: traceDataA,
-		traceB: traceDataB,
-	});
+		command: 'solve'
+	})
 
-
+	panel.webview.onDidReceiveMessage(
+		message => {
+			switch (message.command) {
+				case 'settings':
+					vscode.window.showErrorMessage("hi");
+				return;
+			}
+		},
+		undefined,
+		context.subscriptions
+	);
+	
 	const manifest = require(path.join(
 		context.extensionPath,
 		"build",
@@ -320,7 +312,7 @@ async function initSolve(context: vscode.ExtensionContext) {
 	<body>
 		<noscript>You need to enable JavaScript to run this app.</noscript>
 		<div id="root"></div>
-		<script nonce="${nonce}" src="${scriptUri}"></script>
+		<script nonce="${nonce}" src="${scriptUri}">const vscode = acquireVsCodeApi();</script>
 	</body>
 	</html>`;
 }
