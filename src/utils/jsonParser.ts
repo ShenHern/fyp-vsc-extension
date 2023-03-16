@@ -1,7 +1,6 @@
 import { analyse, sequence, sortTreeByTime } from './functions';
 
-export const parser = (jsonStr: string) => {
-  const json = JSON.parse(jsonStr);
+export const parser = (json: any) => {
   const groupMap = new Map<number, any>();
 
   for (let i = 0; i < json.events.length; i++) {
@@ -28,8 +27,7 @@ export const analyseTrace = (json: any, selectedSim: number) => {
   return(traces);
 }
 
-export const eventsArray = (jsonStr: string) => {
-  const json = JSON.parse(jsonStr);
+export const eventsArray = (json: any) => {
   const eventArray : any = [];
   for (let i = 0; i < json.events.length; i++) {
     eventArray.push(json.events[i].group);
