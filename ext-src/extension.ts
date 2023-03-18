@@ -265,17 +265,17 @@ async function initSolve(context: vscode.ExtensionContext) {
 		command: 'solve'
 	})
 
-	panel.webview.onDidReceiveMessage(
-		message => {
-			switch (message.command) {
-				case 'settings':
-					vscode.window.showErrorMessage("hi");
-				return;
-			}
-		},
-		undefined,
-		context.subscriptions
-	);
+	// panel.webview.onDidReceiveMessage(
+	// 	message => {
+	// 		switch (message.command) {
+	// 			case 'settings':
+	// 				vscode.window.showErrorMessage("hi");
+	// 			return;
+	// 		}
+	// 	},
+	// 	undefined,
+	// 	context.subscriptions
+	// );
 	
 	const manifest = require(path.join(
 		context.extensionPath,
@@ -312,7 +312,7 @@ async function initSolve(context: vscode.ExtensionContext) {
 	<body>
 		<noscript>You need to enable JavaScript to run this app.</noscript>
 		<div id="root"></div>
-		<script nonce="${nonce}" src="${scriptUri}">const vscode = acquireVsCodeApi();</script>
+		<script nonce="${nonce}" src="${scriptUri}"></script>
 	</body>
 	</html>`;
 }

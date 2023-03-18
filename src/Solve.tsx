@@ -41,13 +41,12 @@ function Solve() {
     const [fileList, setFileList] = useState<FileList | null>(null);
     const [message, setMessage] = useState('');
     const [fileMessage, setFileMessage] = useState('');
-    const [propDelay, setPropDelay] = useState<number>(1);
-    const [stdDev, setStdDev] = useState<number>(1);
-    const [probDelay, setProbDelay] = useState<number>(0.0);
-    const [probAssoc, setProbAssoc] = useState<number>(1.0);
-    const [probTrans, setProbTrans] = useState<number>(0.1);
+    const [propDelay, setPropDelay] = useState<Number | null>(1);
+    const [stdDev, setStdDev] = useState<Number | null>(1);
+    const [probDelay, setProbDelay] = useState<Number | null>(0.0);
+    const [probAssoc, setProbAssoc] = useState<Number | null>(1.0);
+    const [probTrans, setProbTrans] = useState<Number | null>(0.1);
     const [disableButton, setDisableButton] = useState<boolean>(true);
-    const vscode = acquireVsCodeApi();
     function submitForm() {
         if (fileList !== null && fileList.length === 2) {
             const settings = {
@@ -60,11 +59,6 @@ function Solve() {
 
             console.log(settings);
             console.log(fileList);
-            window.postMessage({
-                command: 'settings',
-                settings: settings,
-                filePath: fileList
-            })
         }
     }
 
@@ -84,69 +78,78 @@ function Solve() {
             setFileMessage(`${fileArr[0].name} and ${fileArr[1].name} selected.`)
         }
         else {
-            setFileMessage(`Please select 2 files.`)
-            setDisableButton(true);
+            setFileMessage(`Please select 2 files.`);
         }
     };
 
-    const handlePropDelay = (e : any) => {
-        if (e.target.value < 0) {
-            setMessage('Values cannot be negative');
-            setDisableButton(true);
+    React.useEffect(() => {
+        if (propDelay !== null && stdDev !== null && probAssoc !== null && probDelay !== null && probTrans !== null) {
+            if (propDelay >= 0 && stdDev >= 1 && probAssoc >= 0 && probAssoc <= 1 && probDelay >= 0 && probDelay <= 1 && probTrans >= 0 && probTrans <= 1) {
+                setMessage("");
+                setDisableButton(false);
+            }
+            else {
+                setMessage("Values not acceptable   ");
+                setDisableButton(true);
+            }
         }
         else {
-            setPropDelay(e.target.value);
-            setMessage('');
-            setDisableButton(false);
+            setMessage("Fields cannot be blank");
+            setDisableButton(true);
+        }
+        const settings = {
+            propDelay: propDelay,
+            stdDev: stdDev,
+            probDelay: probDelay,
+            probAssoc: probAssoc,
+            probTrans: probTrans
+        }
+
+        console.log(settings);
+    }, [propDelay, stdDev, probAssoc, probDelay, probTrans])
+
+    const handlePropDelay = (e : any) => {
+        if (Number(e.target.value)) {
+            setPropDelay(Number(e.target.value));
+        }
+        else {
+            setPropDelay(null);
         }
     }
 
     const handleStdDev = (e : any) => {
-        if (e.target.value < 1) {
-            setMessage('Standard deviation cannot be less than 1');
-            setDisableButton(true);
-            setDisableButton(false);
+        if (Number(e.target.value)) {
+            setStdDev(Number(e.target.value));
         }
         else {
-            setStdDev(e.target.value);
-            setMessage('');
-            setDisableButton(false);
+            setStdDev(null);
         }
     }
 
     const handleProbDelay = (e : any) => {
-        if (e.target.value < 0) {
-            setMessage('Values cannot be negative');
-            setDisableButton(true);
+        if (Number(e.target.value)) {
+            setProbDelay(Number(e.target.value));
         }
         else {
-            setProbDelay(e.target.value);
-            setMessage('');
-            setDisableButton(false);
+            setProbDelay(null);
         }
     }
 
     const handleProbAssoc = (e : any) => {
-        if (e.target.value < 0) {
-            setMessage('Values cannot be negative');
-            setDisableButton(true);
+        if (Number(e.target.value)) {
+            setProbAssoc(Number(e.target.value));
         }
         else {
-            setProbAssoc(e.target.value);
-            setMessage('');
-            setDisableButton(false);
+            setProbAssoc(null);
         }
     }
 
     const handleProbTrans = (e : any) => {
-        if (e.target.value < 0) {
-            setMessage('Values cannot be negative');
-            setDisableButton(true);
+        if (Number(e.target.value)) {
+            setProbTrans(Number(e.target.value));
         }
         else {
-            setProbTrans(e.target.value);
-            setMessage('');
-            setDisableButton(false);
+            setProbTrans(null);
         }
     }
 
