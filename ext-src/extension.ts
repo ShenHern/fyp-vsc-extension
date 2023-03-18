@@ -1,11 +1,14 @@
+/* eslint-disable no-var */
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable prefer-const */
 import * as vscode from "vscode";
 import * as path from "path";
-import { createJsonStream, extractNode, copyGroup, noDupes, extractTxToDataframe, extractRxToDataframe, align, assocRxTx, merge, half } from "./extFunctions";
+// import { createJsonStream, extractNode, copyGroup, noDupes, extractTxToDataframe, extractRxToDataframe, align, assocRxTx, merge, half } from "./extFunctions";
 import * as fs from "fs";
 import { Problem } from './extTypes';
-import { CommonMessage } from './messages/messageTypes';
+import { Message } from './messages/messageTypes';
+import * as JSONStream from 'jsonstream';
+import { sync } from "glob";
 
 export function activate(context: vscode.ExtensionContext) {
 	const disposableCombine = vscode.commands.registerCommand(
@@ -265,28 +268,75 @@ async function initSolve(context: vscode.ExtensionContext) {
 	panel.webview.postMessage({
 		command: 'solve'
 	})
-
+	let simGroup : any;
+	let filePath1: any;
+	let filePath2: any;
 	panel.webview.onDidReceiveMessage(
-		message => {
-			switch (message.typ) {
-				case 'settings':
-					vscode.window.showErrorMessage("hi");
-				return;
+		async (message: Message) => {
+			if (message.type === 'settings') {
+			vscode.window.showInformationMessage("Select simulation from each trace");
+			filePath1 = message.payload.file1;
+			filePath2 = message.payload.file2;
+
+			var streamA = fs.createReadStream(filePath1, { encoding: 'utf8' });
+			var streamB = fs.createReadStream(filePath2, { encoding: 'utf8' });
+			var parser = JSONStream.parse('events.*');
+			var parser2 = JSONStream.parse('events.*');
+
+			streamA.pipe(parser);
+			const file_listA = await streamToSimArray(parser);
+			streamB.pipe(parser2);
+			const file_listB = await streamToSimArray(parser2);
+			// var parser = JSONStream.parse('events.*');
+
+			// file_listB = await streamToSimArray(parser);
+			const send = {
+				fileA: file_listA,
+				fileB: file_listB
+			}
+			panel.webview.postMessage({
+				command: "simSelect",
+				payload: send
+			})
+
+			}
+			else if (message.type === 'selectedSIM') {
+				const simA = message.payload.simA;
+				const simB = message.payload.simB;
+				var streamA = fs.createReadStream(filePath1, { encoding: 'utf8' });
+				var parser = JSONStream.parse('events.*');
+				var streamB = fs.createReadStream(filePath2, { encoding: 'utf8' });
+				var parser2 = JSONStream.parse('events.*');
+				streamA.pipe(parser);
+				const dataA = await streamToDataArray(parser, simA);
+				streamB.pipe(parser2);
+				const dataB = await streamToDataArray(parser2, simB);
+				console.log(dataA);
+				console.log(dataB);
 			}
 		},
 		undefined,
 		context.subscriptions
 	);
 
-	panel.webview.onDidReceiveMessage(
-		(message: CommonMessage) => {
-			if (message.type === 'settings') {
-			vscode.window.showErrorMessage("hi");
-		}},
-		undefined,
-		context.subscriptions
-	);
+	function streamToSimArray (stream : any) {
+		const chunks : any = [];
+		return new Promise((resolve) => {
+			stream.on('data', (chunk : any) => {
+				chunks.push(chunk.group)});
+			stream.on('end', () => resolve(chunks));
+		})
+	}
 
+	function streamToDataArray (stream : any, sim : any) {
+		const chunks : any = [];
+		return new Promise((resolve) => {
+			stream.on('data', (chunk : any) => {
+				if (chunk.group === sim)
+				chunks.push(chunk)});
+			stream.on('end', () => resolve(chunks));
+		})
+	}
 	
 	const manifest = require(path.join(
 		context.extensionPath,
@@ -341,9 +391,10 @@ async function initCombine(context: vscode.ExtensionContext) {
 	let wsPath = ws[0].uri.path;
 	wsPath = wsPath.substring(1);
 
-	let mergePath = merge(path.join(wsPath, "aligned"));
+	// let mergePath = merge(path.join(wsPath, "aligned"));
 
-	half(mergePath);
+	// half(mergePath);
+	//TODO: add in
 }
 
 async function initReactApp(context: vscode.ExtensionContext) {
@@ -449,3 +500,41 @@ function getNonce() {
   }
   return text;
 }
+function findSimGroup(payload: any) {
+	const filePath1 = payload.file1;
+	const filePath2 = payload.file2;
+	vscode.window.showInformationMessage(filePath1);
+
+	
+	let file_listA : any = [];
+	let file_listB : any = [];
+	var streamA = fs.createReadStream(filePath1, { encoding: 'utf8' });
+	var streamB = fs.createReadStream(filePath2, { encoding: 'utf8' });
+	var parser = JSONStream.parse('events.*');
+
+	streamA.pipe(parser);
+	parser.on('data', (data) => {
+		file_listA.push(data.group as any);
+	})
+	.on('end', (stream) => {
+		// console.log(file_listA);
+		file_listB = file_listA;
+	} )
+	
+	console.log(file_listB);
+	return file_listB
+	// console.log(file_listA);
+	// console.log(streamA);
+	// streamB.pipe(parser);
+	// parser.on('data', function (obj : any) {
+	// 	file_listB.push(obj.group);
+	// })
+	
+	// const simSelect = {
+	// 	fileA: file_listA,
+	// 	fileB: file_listB
+	// }
+	// console.log(file_listA);?
+	// return simSelect;
+}
+

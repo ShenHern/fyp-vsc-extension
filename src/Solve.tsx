@@ -2,7 +2,7 @@ import React, { ChangeEvent, useState, useRef, useReducer} from "react";
 import styled from "styled-components";
 import { parse } from "url";
 import styles from "./mystyle.module.css";
-import { CommonMessage } from '../ext-src/messages/messageTypes';
+import { Message, CommonMessage } from '../ext-src/messages/messageTypes';
 
 const blue = "#007acc";
 const red = "#D16969";
@@ -39,14 +39,26 @@ border: 2px solid white;
 }
 `
 
-function Solve() {
+const Button2 = styled.button`
+display: inline-block;
+border-radius: 3px;
+padding: 0.5rem 0;
+margin: 0.5rem 1rem;
+width: 11rem;
+background: white;
+color: black;
+border: 2px solid white;
+&:hover {
+  background-color: ${blue};
+  color: white;
+}
+&:disabled {
+  background-color: gray;
+  color: white;
+}
+`
 
-    const sendMessage = () => {
-        vscode.postMessage<CommonMessage>({
-          type: 'settings',
-          payload: message,
-        });
-    }
+function Solve() {
 
     const [fileList, setFileList] = useState<FileList | null>(null);
     const [message, setMessage] = useState('');
@@ -57,6 +69,17 @@ function Solve() {
     const [probAssoc, setProbAssoc] = useState<number>(1.0);
     const [probTrans, setProbTrans] = useState<number>(0.1);
     const [disableButton, setDisableButton] = useState<boolean>(true);
+    const [disableButtonSolve, setDisableButtonSolve] = useState<boolean>(true);
+    const [fileA_sim, setFileA_sim] = useState<any[]>([]);
+    const [fileB_sim, setFileB_sim] = useState<any[]>([]);
+    const [simA , setSimA] = useState<String>('');
+    const [simB , setSimB] = useState<String>('');
+
+
+    interface FileWithPath extends File {
+        path: string
+      }
+
     function submitForm() {
         if (fileList !== null && fileList.length === 2) {
             const settings = {
@@ -64,18 +87,24 @@ function Solve() {
                 stdDev: stdDev,
                 probDelay: probDelay,
                 probAssoc: probAssoc,
-                probTrans: probTrans
+                probTrans: probTrans,
+                file1: (fileList[0] as FileWithPath).path,
+                file2: (fileList[1] as FileWithPath).path
             }
             vscode.postMessage<CommonMessage>({
                 type: 'settings',
                 payload: settings,
             });
-            console.log(settings);
-            console.log(fileList);
-
         }
     }
 
+    window.addEventListener("message", (event) => {
+        if(event.data.command==="simSelect") {
+            setFileA_sim(event.data.payload.fileA);
+            setFileB_sim(event.data.payload.fileB);
+        }
+    });
+    
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files !== null && e.target.files.length === 2 ) {
             const fileArr = e.target.files;
@@ -145,6 +174,41 @@ function Solve() {
         }
     }
 
+    const handleSelectA = (sim : string) => {
+        // const index = fileA_sim.indexOf(sim);
+        // setSimNumber(index);
+        // const traceArray = analyseTrace(jsonData, index);
+        // setTrace(traceArray);
+        setSimA(sim);
+    }
+    const handleSelectB = (sim : string) => {
+        // const index = fileA_sim.indexOf(sim);
+        // setSimNumber(index);
+        // const traceArray = analyseTrace(jsonData, index);
+        // setTrace(traceArray);
+        setSimB(sim);
+    }
+
+    React.useEffect(() => {
+        if (simA === "invalid" || simB === "invalid" || simA === '' || simB === '') {
+            setDisableButtonSolve(true)
+        }
+        else {
+            setDisableButtonSolve(false)
+        }
+    }, [simA, simB]);
+
+    function submitSim() {
+        const sim = {
+            simA: simA,
+            simB: simB
+        }
+        vscode.postMessage<Message>({
+            type: 'selectedSIM',
+            payload: sim
+        });
+    }
+
     return(
         <div>
             <h2 className={styles.head}>Choose 2 trace.json files</h2>
@@ -177,10 +241,41 @@ function Solve() {
                     </div>
                 </div>
                 <div className={styles.Button}>
-                    <Button onClick={() => submitForm()} disabled={disableButton}>Solve</Button>
+                    <Button onClick={() => submitForm()} disabled={disableButton}>Input parameters</Button>
                     {message!=='' && (<p className={styles.pass}> {message} </p>)}
                 </div>
             </fieldset>
+            {   
+                fileA_sim.length > 0 && fileB_sim.length > 0 &&
+                <div className={styles.box}>
+                    <p>{fileList && fileList[0].name}</p>
+                    <select onChange={(e) => handleSelectA(e.target.value)}>
+                    <option value="invalid">Select Simulation</option>
+                    {
+                    fileA_sim.map((sim, index) => {
+                    return(
+                        <option key={index} value={sim}>{sim}</option>
+                    )
+                    })
+                    }
+                    </select>
+                    <p>{fileList && fileList[1].name}</p>
+                    <select onChange={(e) => handleSelectB(e.target.value)}>
+                    <option value="invalid">Select Simulation</option>
+                    {
+                    fileB_sim.map((sim, index) => {
+                    return(
+                        <option key={index} value={sim}>{sim}</option>
+                    )
+                    })
+                    }
+                    </select>
+                    <br></br>
+                    <div className={styles.Button}>
+                        <Button2 onClick={() => submitSim()} disabled={disableButtonSolve}>Solve</Button2>
+                    </div>
+                </div>
+            }
         </div>
     )
 }

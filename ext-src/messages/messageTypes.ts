@@ -1,4 +1,4 @@
-export type MessageType = 'view' | 'solve' | 'settings';
+export type MessageType = 'view' | 'solve' | 'settings' | 'selectedSIM';
 
 export interface Message {
   type: MessageType;
