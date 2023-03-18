@@ -1,5 +1,6 @@
 import React, { ChangeEvent, useState, useRef, useReducer} from "react";
 import styled from "styled-components";
+import { parse } from "url";
 import styles from "./mystyle.module.css";
 
 const blue = "#007acc";
@@ -41,11 +42,11 @@ function Solve() {
     const [fileList, setFileList] = useState<FileList | null>(null);
     const [message, setMessage] = useState('');
     const [fileMessage, setFileMessage] = useState('');
-    const [propDelay, setPropDelay] = useState<Number | null>(1);
-    const [stdDev, setStdDev] = useState<Number | null>(1);
-    const [probDelay, setProbDelay] = useState<Number | null>(0.0);
-    const [probAssoc, setProbAssoc] = useState<Number | null>(1.0);
-    const [probTrans, setProbTrans] = useState<Number | null>(0.1);
+    const [propDelay, setPropDelay] = useState<number>(1);
+    const [stdDev, setStdDev] = useState<number>(1);
+    const [probDelay, setProbDelay] = useState<number>(0.0);
+    const [probAssoc, setProbAssoc] = useState<number>(1.0);
+    const [probTrans, setProbTrans] = useState<number>(0.1);
     const [disableButton, setDisableButton] = useState<boolean>(true);
     function submitForm() {
         if (fileList !== null && fileList.length === 2) {
@@ -62,94 +63,72 @@ function Solve() {
         }
     }
 
-    React.useEffect(() => {
-        if (fileList === null || fileList.length !== 2) {
-            setDisableButton(true);
-        }
-        else {
-            setDisableButton(false);
-        }
-    }, [fileList]);
-
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files !== null && e.target.files.length === 2 ) {
             const fileArr = e.target.files;
             setFileList(fileArr);
             setFileMessage(`${fileArr[0].name} and ${fileArr[1].name} selected.`)
+            setDisableButton(false);
         }
         else {
             setFileMessage(`Please select 2 files.`);
+            setDisableButton(true);
         }
     };
 
     React.useEffect(() => {
-        if (propDelay !== null && stdDev !== null && probAssoc !== null && probDelay !== null && probTrans !== null) {
-            if (propDelay >= 0 && stdDev >= 1 && probAssoc >= 0 && probAssoc <= 1 && probDelay >= 0 && probDelay <= 1 && probTrans >= 0 && probTrans <= 1) {
-                setMessage("");
-                setDisableButton(false);
+        if (fileList === null || fileList.length !== 2) {
+            setDisableButton(true);
+        } else {
+            if ((!Number.isNaN(propDelay)) && (!Number.isNaN(stdDev)) &&  (!Number.isNaN(probAssoc)) && (!Number.isNaN(probDelay))  && (!Number.isNaN(probTrans))) {
+                if (propDelay >= 0 && stdDev >= 1 && probAssoc >= 0 && probAssoc <= 1 && probDelay >= 0 && probDelay <= 1 && probTrans >= 0 && probTrans <= 1) {
+                    setMessage("");
+                    setDisableButton(false);
+                }
+                else {
+                    setMessage("Values not acceptable");
+                    setDisableButton(true);
+                }
             }
             else {
-                setMessage("Values not acceptable   ");
+                setMessage("Fields cannot be blank");
                 setDisableButton(true);
             }
         }
-        else {
-            setMessage("Fields cannot be blank");
-            setDisableButton(true);
-        }
-        const settings = {
-            propDelay: propDelay,
-            stdDev: stdDev,
-            probDelay: probDelay,
-            probAssoc: probAssoc,
-            probTrans: probTrans
-        }
-
-        console.log(settings);
-    }, [propDelay, stdDev, probAssoc, probDelay, probTrans])
+    }, [fileList, propDelay, stdDev, probAssoc, probDelay, probTrans])
 
     const handlePropDelay = (e : any) => {
-        if (Number(e.target.value)) {
-            setPropDelay(Number(e.target.value));
-        }
-        else {
-            setPropDelay(null);
+        const val = parseFloat(e.target.value);
+        if (typeof val === "number") {
+            setPropDelay(val);
         }
     }
 
     const handleStdDev = (e : any) => {
-        if (Number(e.target.value)) {
-            setStdDev(Number(e.target.value));
-        }
-        else {
-            setStdDev(null);
+        const val = parseFloat(e.target.value);
+        if (typeof val === "number") {
+            setStdDev(val);
         }
     }
 
     const handleProbDelay = (e : any) => {
-        if (Number(e.target.value)) {
-            setProbDelay(Number(e.target.value));
-        }
-        else {
-            setProbDelay(null);
+        const val = parseFloat(e.target.value);
+        if (typeof val === "number") {
+            setProbDelay(val);
         }
     }
 
     const handleProbAssoc = (e : any) => {
-        if (Number(e.target.value)) {
-            setProbAssoc(Number(e.target.value));
-        }
-        else {
-            setProbAssoc(null);
+        const val = parseFloat(e.target.value);
+        if (typeof val === "number") {
+            setProbAssoc(val);
         }
     }
 
     const handleProbTrans = (e : any) => {
-        if (Number(e.target.value)) {
-            setProbTrans(Number(e.target.value));
-        }
-        else {
-            setProbTrans(null);
+        const val = parseFloat(e.target.value);
+        if (typeof val === "number") {
+            setProbTrans(val);
         }
     }
 
