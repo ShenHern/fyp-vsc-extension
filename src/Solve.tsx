@@ -2,6 +2,7 @@ import React, { ChangeEvent, useState, useRef, useReducer} from "react";
 import styled from "styled-components";
 import { parse } from "url";
 import styles from "./mystyle.module.css";
+import { CommonMessage } from '../ext-src/messages/messageTypes';
 
 const blue = "#007acc";
 const red = "#D16969";
@@ -39,6 +40,14 @@ border: 2px solid white;
 `
 
 function Solve() {
+
+    const sendMessage = () => {
+        vscode.postMessage<CommonMessage>({
+          type: 'settings',
+          payload: message,
+        });
+    }
+
     const [fileList, setFileList] = useState<FileList | null>(null);
     const [message, setMessage] = useState('');
     const [fileMessage, setFileMessage] = useState('');
@@ -57,9 +66,13 @@ function Solve() {
                 probAssoc: probAssoc,
                 probTrans: probTrans
             }
-
+            vscode.postMessage<CommonMessage>({
+                type: 'settings',
+                payload: settings,
+            });
             console.log(settings);
             console.log(fileList);
+
         }
     }
 

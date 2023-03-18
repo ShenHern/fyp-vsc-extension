@@ -5,6 +5,7 @@ import * as path from "path";
 import { createJsonStream, extractNode, copyGroup, noDupes, extractTxToDataframe, extractRxToDataframe, align, assocRxTx, merge, half } from "./extFunctions";
 import * as fs from "fs";
 import { Problem } from './extTypes';
+import { CommonMessage } from './messages/messageTypes';
 
 export function activate(context: vscode.ExtensionContext) {
 	const disposableCombine = vscode.commands.registerCommand(
@@ -265,17 +266,27 @@ async function initSolve(context: vscode.ExtensionContext) {
 		command: 'solve'
 	})
 
-	// panel.webview.onDidReceiveMessage(
-	// 	message => {
-	// 		switch (message.command) {
-	// 			case 'settings':
-	// 				vscode.window.showErrorMessage("hi");
-	// 			return;
-	// 		}
-	// 	},
-	// 	undefined,
-	// 	context.subscriptions
-	// );
+	panel.webview.onDidReceiveMessage(
+		message => {
+			switch (message.typ) {
+				case 'settings':
+					vscode.window.showErrorMessage("hi");
+				return;
+			}
+		},
+		undefined,
+		context.subscriptions
+	);
+
+	panel.webview.onDidReceiveMessage(
+		(message: CommonMessage) => {
+			if (message.type === 'settings') {
+			vscode.window.showErrorMessage("hi");
+		}},
+		undefined,
+		context.subscriptions
+	);
+
 	
 	const manifest = require(path.join(
 		context.extensionPath,
@@ -312,6 +323,9 @@ async function initSolve(context: vscode.ExtensionContext) {
 	<body>
 		<noscript>You need to enable JavaScript to run this app.</noscript>
 		<div id="root"></div>
+		<script>
+			const vscode = acquireVsCodeApi();
+		</script>
 		<script nonce="${nonce}" src="${scriptUri}"></script>
 	</body>
 	</html>`;
