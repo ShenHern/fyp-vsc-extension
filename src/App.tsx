@@ -6,6 +6,7 @@ import Solve from "./Solve";
 const App: React.FC = () => {
 
   const [jsonData, setJsonData] = useState<any>();
+  const [viewwindow, OpenViewWindow] = useState<boolean>();
   const [solveWindow, OpenSolveWindow] = useState<boolean>();
 
   window.addEventListener("message", (event) => {
@@ -14,9 +15,12 @@ const App: React.FC = () => {
         const newJsonData = event.data.json;
         const json = JSON.parse(newJsonData);
         setJsonData(json)
+        OpenViewWindow(true);
+        OpenSolveWindow(false);
         break;
       }
       case 'solve': {
+        OpenViewWindow(false);
         OpenSolveWindow(true);
         break;
       }
@@ -26,11 +30,11 @@ const App: React.FC = () => {
   return (
     <div>
     {
-      jsonData && <RenderGraph
+      (viewwindow) && <RenderGraph
       {...jsonData}/>
     }
     {
-      (OpenSolveWindow) &&
+      (solveWindow) &&
       <Solve
       />
     }

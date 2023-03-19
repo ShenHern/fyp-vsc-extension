@@ -120,3 +120,11 @@ tr:nth-child(even) {
   color: white;
   align-items: center;
 }
+
+.buttonSolve {
+  text-align: center;
+}
+
+.buttonSolve div {
+  display: flex;
+}

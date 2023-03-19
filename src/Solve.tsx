@@ -70,10 +70,12 @@ function Solve() {
     const [probTrans, setProbTrans] = useState<number>(0.1);
     const [disableButton, setDisableButton] = useState<boolean>(true);
     const [disableButtonSolve, setDisableButtonSolve] = useState<boolean>(true);
+    const [disableButtonCombine, setDisableButtonCombine] = useState<boolean>(true);
     const [fileA_sim, setFileA_sim] = useState<any[]>([]);
     const [fileB_sim, setFileB_sim] = useState<any[]>([]);
     const [simA , setSimA] = useState<String>('');
     const [simB , setSimB] = useState<String>('');
+    const [combine , setCombine] = useState<String>('');
 
 
     interface FileWithPath extends File {
@@ -103,8 +105,19 @@ function Solve() {
             setFileA_sim(event.data.payload.fileA);
             setFileB_sim(event.data.payload.fileB);
         }
+        else if (event.data.command==="combine") {
+            console.log("combine");
+            setCombine(event.data.payload);
+        }
     });
     
+    React.useEffect(() => {
+        if(combine !== '') {
+            setDisableButtonCombine(false);
+        } else {
+            setDisableButtonCombine(true);
+        }
+    }, [combine])
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files !== null && e.target.files.length === 2 ) {
             const fileArr = e.target.files;
@@ -208,10 +221,17 @@ function Solve() {
             payload: sim
         });
     }
+    function submitCombine() {
+        vscode.postMessage<Message>({
+            type: 'combineFiles',
+            payload: combine
+        });
+    }
 
     return(
         <div>
-            <h2 className={styles.head}>Choose 2 trace.json files</h2>
+            <h2 className={styles.head}>Align trace.json Timings of 2 Nodes</h2>
+            <p className={styles.head}>Choose 2 trace.json files to be aligned</p>
             <input className={styles.input} type="file" accept=".json" onChange={handleFileChange} multiple />
             {fileMessage!=='' && (<p className={styles.pass}> {fileMessage} </p>)}
             <br></br>
@@ -245,37 +265,40 @@ function Solve() {
                     {message!=='' && (<p className={styles.pass}> {message} </p>)}
                 </div>
             </fieldset>
-            {   
-                fileA_sim.length > 0 && fileB_sim.length > 0 &&
-                <div className={styles.box}>
-                    <p>{fileList && fileList[0].name}</p>
-                    <select onChange={(e) => handleSelectA(e.target.value)}>
-                    <option value="invalid">Select Simulation</option>
-                    {
-                    fileA_sim.map((sim, index) => {
-                    return(
-                        <option key={index} value={sim}>{sim}</option>
-                    )
-                    })
-                    }
-                    </select>
-                    <p>{fileList && fileList[1].name}</p>
-                    <select onChange={(e) => handleSelectB(e.target.value)}>
-                    <option value="invalid">Select Simulation</option>
-                    {
-                    fileB_sim.map((sim, index) => {
-                    return(
-                        <option key={index} value={sim}>{sim}</option>
-                    )
-                    })
-                    }
-                    </select>
-                    <br></br>
-                    <div className={styles.Button}>
-                        <Button2 onClick={() => submitSim()} disabled={disableButtonSolve}>Solve</Button2>
+                {      
+                    fileA_sim.length > 0 && fileB_sim.length > 0 &&
+                    <div className={styles.box}>
+                        <div>
+                        <p>{fileList && fileList[0].name}</p>
+                        <select onChange={(e) => handleSelectA(e.target.value)}>
+                        <option value="invalid">Select Simulation</option>
+                        {
+                        fileA_sim.map((sim, index) => {
+                        return(
+                            <option key={index} value={sim}>{sim}</option>
+                        )
+                        })
+                        }
+                        </select>
+                        </div>
+                        <p>{fileList && fileList[1].name}</p>
+                        <select onChange={(e) => handleSelectB(e.target.value)}>
+                        <option value="invalid">Select Simulation</option>
+                        {
+                        fileB_sim.map((sim, index) => {
+                        return(
+                            <option key={index} value={sim}>{sim}</option>
+                        )
+                        })
+                        }
+                        </select>
+                        <br></br>
+                        <div className={styles.button}>
+                            <Button2 onClick={() => submitSim()} disabled={disableButtonSolve}>Solve</Button2>
+                            <Button2 onClick={() => submitCombine()} disabled={disableButtonCombine}>Combine</Button2>
+                        </div>
                     </div>
-                </div>
-            }
+                    }
         </div>
     )
 }
