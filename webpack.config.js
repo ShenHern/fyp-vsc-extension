@@ -2,11 +2,12 @@
 //@ts-check
 "use strict";
 const path = require("path");
+const webpack = require("webpack");
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
 /** @type WebpackConfig */
 const extensionConfig = {
-  target: "node",
+  target: "webworker",
   mode: "none",
 
   entry: "./ext-src/extension.ts",
@@ -20,6 +21,15 @@ const extensionConfig = {
   },
   resolve: {
     extensions: [".ts", ".js"],
+    mainFields: ['browser', 'module', 'main'],
+    modules:  ['node_modules'],
+    fallback: {
+      fs: false,
+      crypto: require.resolve('crypto-browserify'),
+      stream: require.resolve('stream-browserify'),
+      path: require.resolve('path-browserify'),
+      'object-hash': require.resolve('object-hash')
+    }
   },
   module: {
     rules: [

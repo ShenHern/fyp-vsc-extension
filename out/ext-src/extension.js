@@ -12,7 +12,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 /* eslint-disable prefer-const */
 import * as vscode from "vscode";
 import * as path from "path";
-import { extractNode, copyGroup, noDupes, extractTxToDataframe, extractRxToDataframe, assocRxTx, align, merge, half } from "./extFunctions";
+import { extractNode, copyGroup, noDupes, extractTxToDataframe, extractRxToDataframe, align, merge, half, assocRxTx } from "./extFunctions";
 import * as fs from "fs";
 import * as JSONStream from 'jsonstream';
 export function activate(context) {

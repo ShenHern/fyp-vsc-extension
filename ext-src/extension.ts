@@ -3,7 +3,7 @@
 /* eslint-disable prefer-const */
 import * as vscode from "vscode";
 import * as path from "path";
-import { extractNode, copyGroup, noDupes, extractTxToDataframe, extractRxToDataframe, align, merge, half } from "./extFunctions";
+import { extractNode, copyGroup, noDupes, extractTxToDataframe, extractRxToDataframe, align, merge, half, assocRxTx } from "./extFunctions";
 import * as fs from "fs";
 import { Problem } from './extTypes';
 import { Message } from './messages/messageTypes';
@@ -132,20 +132,20 @@ async function initSolve(context: vscode.ExtensionContext) {
 					pfalse: (rx) => probabilites[2]
 				};
 
-				// let assocDataframe = assocRxTx(problem);
-				// let deltaT = 0;
-				// for (let row of assocDataframe) {
-				// 	deltaT += row[2];
-				// }
-				// deltaT = Math.floor(deltaT / assocDataframe.length);
-				// let clockDrift = deltaT - delayInMilliseconds;
+				let assocDataframe = assocRxTx(problem);
+				let deltaT = 0;
+				for (let row of assocDataframe) {
+					deltaT += row[2];
+				}
+				deltaT = Math.floor(deltaT / assocDataframe.length);
+				let clockDrift = deltaT - delayInMilliseconds;
 
-				// align(dataB, clockDrift, ws, path.parse(filePath2).base, simB);
-				// vscode.window.showInformationMessage(`Aligned trace.json timings found in ${path.join(ws, "aligned")}`);
-				// panel.webview.postMessage({
-				// 	command: "combine",
-				// 	payload: path.join(ws, "aligned")
-				// })
+				align(dataB, clockDrift, ws, path.parse(filePath2).base, simB);
+				vscode.window.showInformationMessage(`Aligned trace.json timings found in ${path.join(ws, "aligned")}`);
+				panel.webview.postMessage({
+					command: "combine",
+					payload: path.join(ws, "aligned")
+				})
 				
 			} else if (message.type === 'combineFiles') {
 				let mergePath = merge(message.payload);

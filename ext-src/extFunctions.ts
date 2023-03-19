@@ -4,8 +4,8 @@
 import * as fs from 'fs';
 import * as path from "path";
 import { Problem, State } from './extTypes';
-
-// var gaussian = require('gaussian');
+import { sha1 } from 'object-hash';
+var gaussian = require('gaussian');
 
 function splitComponents(s: string) {
     const regexName = /\w.*(?=::)/;
@@ -127,111 +127,111 @@ export function noDupes(dataFrame: any[][]) {
         [[txID, timing], [rxID, timing], deltaT]],...
         ]
  */
-// export function assocRxTx(p: Problem, nhypothesis = 30) {
-//     let firstState: State = {
-//         score: 0,
-//         backlink: undefined,
-//         assoc: undefined,
-//         i: 0,
-//         j: 0,
-//         mean: p.mean,
-//         std: p.std
-//     };
+export function assocRxTx(p: Problem, nhypothesis = 30) {
+    let firstState: State = {
+        score: 0,
+        backlink: undefined,
+        assoc: undefined,
+        i: 0,
+        j: 0,
+        mean: p.mean,
+        std: p.std
+    };
 
-//     let setOfStates = [firstState];
+    let setOfStates = [firstState];
 
-//     for (let j = 0; j < p.rx.length; j++) {
-//         let setOfStatesPlus: State[] = [];
-//         let rx = p.rx[j][1];
-//         for (let state of setOfStates) {
-//             let timeDistribution = gaussian(state.mean, state.std ** 2); // Gaussian distribution here expects variance which is std^2
-//             let pfalse = p.pfalse(rx);
-//             let prob = pfalse * timeDistribution.pdf(state.mean);
-//             setOfStatesPlus.push({
-//                 score: state.score + Math.log10(prob),
-//                 backlink: state,
-//                 assoc: undefined,
-//                 i: state.i,
-//                 j: j,
-//                 mean: state.mean,
-//                 std: state.std
-//             });
+    for (let j = 0; j < p.rx.length; j++) {
+        let setOfStatesPlus: State[] = [];
+        let rx = p.rx[j][1];
+        for (let state of setOfStates) {
+            let timeDistribution = gaussian(state.mean, state.std ** 2); // Gaussian distribution here expects variance which is std^2
+            let pfalse = p.pfalse(rx);
+            let prob = pfalse * timeDistribution.pdf(state.mean);
+            setOfStatesPlus.push({
+                score: state.score + Math.log10(prob),
+                backlink: state,
+                assoc: undefined,
+                i: state.i,
+                j: j,
+                mean: state.mean,
+                std: state.std
+            });
 
-//             for (let i = 0; i < p.tx.length; i++) {
-//                 let tx = p.tx[i][1];    //iterate through all tx timings
-//                 let deltaTime = (rx - tx) - p.delay(tx, rx);
-//                 if (deltaTime < -3 * state.std) {
-//                     break;
-//                 }
+            for (let i = 0; i < p.tx.length; i++) {
+                let tx = p.tx[i][1];    //iterate through all tx timings
+                let deltaTime = (rx - tx) - p.delay(tx, rx);
+                if (deltaTime < -3 * state.std) {
+                    break;
+                }
 
-//                 prob = (1 - pfalse) * timeDistribution.pdf(deltaTime) * p.passoc(tx, rx);
-//                 let assocPair = [i, j];
-//                 let stateToPush = {
-//                     score: state.score + Math.log10(prob),
-//                     backlink: state,
-//                     assoc: assocPair,
-//                     i: i,
-//                     j: j,
-//                     mean: deltaTime,
-//                     std: state.std
-//                 };
-//                 setOfStatesPlus.push(stateToPush);
-//             }
-//         }
-//         setOfStatesPlus.sort((a, b) => b.score - a.score); //reverse order sorted
-//         if (setOfStates[0].score === Infinity) {
-//             console.log(`Ran out of possibilities for RX[${j}]!`);
-//             break;
-//         }
+                prob = (1 - pfalse) * timeDistribution.pdf(deltaTime) * p.passoc(tx, rx);
+                let assocPair = [i, j];
+                let stateToPush = {
+                    score: state.score + Math.log10(prob),
+                    backlink: state,
+                    assoc: assocPair,
+                    i: i,
+                    j: j,
+                    mean: deltaTime,
+                    std: state.std
+                };
+                setOfStatesPlus.push(stateToPush);
+            }
+        }
+        setOfStatesPlus.sort((a, b) => b.score - a.score); //reverse order sorted
+        if (setOfStates[0].score === Infinity) {
+            console.log(`Ran out of possibilities for RX[${j}]!`);
+            break;
+        }
 
-//         setOfStatesPlus.filter(s => s.score >= setOfStatesPlus[0].score - 1);
-//         // setOfStatesPlus.filter(s => !isDuplicate(s, setOfStatesPlus));
-//         if (setOfStatesPlus.length > nhypothesis) {
-//             setOfStatesPlus = setOfStatesPlus.slice(0, nhypothesis);
-//         }
-//         setOfStates = setOfStatesPlus;
-//     }
-//     let assoc: any[][] = [];    //assoc --> [[i1, j1], [i2, j2]]
-//     let state: State | undefined = setOfStates[0];
-//     while (state !== undefined) {
-//         if ((state.assoc !== undefined)) {
-//             assoc.push(state.assoc);    // state.assoc --> [i, j] where i: tx idx; j: rx idx
-//         }
-//         state = state.backlink;
-//     }
-//     assoc.sort((a, b) => a[0] - b[0]);  // sort by tx idx
-//     let finalAssoc: any[][] = [];
-//     for (let pair of assoc) {
-//         let tx = p.tx[pair[0]];
-//         let rx = p.rx[pair[1]];
-//         let deltaT = rx[1] - tx[1] - p.delay(tx[1], rx[1]);
-//         let row = [tx, rx, deltaT];
-//         finalAssoc.push(row);
-//     }
-//     /* finalAssoc --> 
-//     [[[txID, timing], [rxID, timing], deltaT]],
-//     [[txID, timing], [rxID, timing], deltaT]],...
-//     ]*/
-//     return finalAssoc;
+        setOfStatesPlus.filter(s => s.score >= setOfStatesPlus[0].score - 1);
+        // setOfStatesPlus.filter(s => !isDuplicate(s, setOfStatesPlus));
+        if (setOfStatesPlus.length > nhypothesis) {
+            setOfStatesPlus = setOfStatesPlus.slice(0, nhypothesis);
+        }
+        setOfStates = setOfStatesPlus;
+    }
+    let assoc: any[][] = [];    //assoc --> [[i1, j1], [i2, j2]]
+    let state: State | undefined = setOfStates[0];
+    while (state !== undefined) {
+        if ((state.assoc !== undefined)) {
+            assoc.push(state.assoc);    // state.assoc --> [i, j] where i: tx idx; j: rx idx
+        }
+        state = state.backlink;
+    }
+    assoc.sort((a, b) => a[0] - b[0]);  // sort by tx idx
+    let finalAssoc: any[][] = [];
+    for (let pair of assoc) {
+        let tx = p.tx[pair[0]];
+        let rx = p.rx[pair[1]];
+        let deltaT = rx[1] - tx[1] - p.delay(tx[1], rx[1]);
+        let row = [tx, rx, deltaT];
+        finalAssoc.push(row);
+    }
+    /* finalAssoc --> 
+    [[[txID, timing], [rxID, timing], deltaT]],
+    [[txID, timing], [rxID, timing], deltaT]],...
+    ]*/
+    return finalAssoc;
 
-// }
+}
 
-// // function isDuplicate(state: State, setOfStates: State[]): boolean {
-// //     for (let s of setOfStates) {
-// //         if (s === state) {
-// //             continue;
-// //         } else if (s.i !== state.i || s.j !== state.j || s.assoc !== state.assoc) {
-// //             continue;
-// //         } else if (state.score > s.score) {
-// //             continue;
-// //         } else if (state.score < s.score) {
-// //             return true;
-// //         } else if (sha1(state) < sha1(s)) {
-// //             return true;    //if scores are same, discard state if it has a lower hash value than s. Arbitrary tiebreaker
-// //         }
-// //     }
-// //     return false;
-// // }
+function isDuplicate(state: State, setOfStates: State[]): boolean {
+    for (let s of setOfStates) {
+        if (s === state) {
+            continue;
+        } else if (s.i !== state.i || s.j !== state.j || s.assoc !== state.assoc) {
+            continue;
+        } else if (state.score > s.score) {
+            continue;
+        } else if (state.score < s.score) {
+            return true;
+        } else if (sha1(state) < sha1(s)) {
+            return true;    //if scores are same, discard state if it has a lower hash value than s. Arbitrary tiebreaker
+        }
+    }
+    return false;
+}
 
 /**
  * function that aligns a trace file's timing for clock drift; resulting file is saved in 'aligned/' folder

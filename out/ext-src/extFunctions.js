@@ -3,6 +3,7 @@
 /* eslint-disable prefer-const */
 import * as fs from 'fs';
 import * as path from "path";
+import { sha1 } from 'object-hash';
 var gaussian = require('gaussian');
 function splitComponents(s) {
     const regexName = /\w.*(?=::)/;
@@ -195,22 +196,26 @@ export function assocRxTx(p, nhypothesis = 30) {
     ]*/
     return finalAssoc;
 }
-// function isDuplicate(state: State, setOfStates: State[]): boolean {
-//     for (let s of setOfStates) {
-//         if (s === state) {
-//             continue;
-//         } else if (s.i !== state.i || s.j !== state.j || s.assoc !== state.assoc) {
-//             continue;
-//         } else if (state.score > s.score) {
-//             continue;
-//         } else if (state.score < s.score) {
-//             return true;
-//         } else if (sha1(state) < sha1(s)) {
-//             return true;    //if scores are same, discard state if it has a lower hash value than s. Arbitrary tiebreaker
-//         }
-//     }
-//     return false;
-// }
+function isDuplicate(state, setOfStates) {
+    for (let s of setOfStates) {
+        if (s === state) {
+            continue;
+        }
+        else if (s.i !== state.i || s.j !== state.j || s.assoc !== state.assoc) {
+            continue;
+        }
+        else if (state.score > s.score) {
+            continue;
+        }
+        else if (state.score < s.score) {
+            return true;
+        }
+        else if (sha1(state) < sha1(s)) {
+            return true; //if scores are same, discard state if it has a lower hash value than s. Arbitrary tiebreaker
+        }
+    }
+    return false;
+}
 /**
  * function that aligns a trace file's timing for clock drift; resulting file is saved in 'aligned/' folder
  * @param groupEvents the list of events for a simulation/experiment group
