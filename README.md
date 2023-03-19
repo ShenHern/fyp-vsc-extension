@@ -1,13 +1,14 @@
-## React app is in src folder, extension layer is in ext-src
+# Unet Trace
+
+**A visualisation and analytics tool for UnetStack nodes**
+
+ Commands: `Ctrl + Shift + P`  
+ - `UnetTrace: Create Visualisation from Trace File`  
+- `UnetTrace: Align and Combine Trace Files`  
 
 ## Requirements
-
-- Run `npm install --global yarn`
-- Check yarn installed by running `yarn -version`; it should output the version
-- Run `npm install` to install all packages
+- Run `npm install --global yarn`.  
+- Run `npm install` or `yarn` to install all packages.  
 
 ## Development
-
-- Run `yarn watch-build` and wait until you see green colour line
-- `F5` to start debugging
-- Save any file you made changes to restart `yarn watch-build` again
+- Run `yarn watch-build` and `F5` to start debugging  

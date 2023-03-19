@@ -106,7 +106,6 @@ function Solve() {
             setFileB_sim(event.data.payload.fileB);
         }
         else if (event.data.command==="combine") {
-            console.log("combine");
             setCombine(event.data.payload);
         }
     });
@@ -294,7 +293,7 @@ function Solve() {
                         </select>
                         <br></br>
                         <div className={styles.button}>
-                            <Button2 onClick={() => submitSim()} disabled={disableButtonSolve}>Solve</Button2>
+                            <Button2 onClick={() => submitSim()} disabled={disableButtonSolve}>Align</Button2>
                             <Button2 onClick={() => submitCombine()} disabled={disableButtonCombine}>Combine</Button2>
                         </div>
                     </div>

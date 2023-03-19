@@ -2,11 +2,13 @@
   "name": "unettrace",
   "version": "0.0.1",
   "displayName": "Unet Trace",
-  "description": "",
+  "description": "A visualisation and analytics tool for UnetStack nodes",
   "engines": {
     "vscode": "^1.71.0"
   },
   "publisher": "Unet",
+  "license": "unlicensed",
+  "repository": "https://github.com/ShenHern/fyp-vsc-extension",
   "categories": [
     "Other"
   ],
@@ -27,7 +29,7 @@
       },
       {
         "command": "unettrace.solve",
-        "title": "UnetTrace: Combine & Aligned Trace Files"
+        "title": "UnetTrace: Align and Combine Trace Files"
       }
     ],
     "menus": {
