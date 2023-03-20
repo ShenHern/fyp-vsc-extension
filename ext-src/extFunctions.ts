@@ -369,9 +369,9 @@ export function half(combinedFilePath: string) {
     var j;
     for (i = 0; i < length; i++) {
         evcopy.push(events[i]);
-        if (events[i].response.clazz.includes('TxFrame')) {
-            for (j = i; j < i + 6; j++) {
-                if (events[j].stimulus.clazz.includes('RxFrame')) {
+        if (events[i].response.clazz.includes('TxFrameReq')) {
+            for (j = i+1; j < i + 6; j++) {
+                if (events[j].stimulus.clazz.includes('RxFrameNtf')) {
                     let inform = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "recipient": "" } };
                     let agree = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "recipient": "" } };
                     let txnotif = { "time": [], "component": "", "threadID": "", "stimulus": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" }, "response": { "clazz": "", "messageID": "", "performative": "", "sender": "", "recipient": "" } };
@@ -400,22 +400,9 @@ export function half(combinedFilePath: string) {
                     agree.stimulus.sender = sender.stimulus.recipient;
                     agree.stimulus.recipient = "phy";
                     agree.response.clazz = "org.arl.fjage.Message";
-                    agree.response.messageID = inform.response.messageID;//9913082f-0891-40be-8b8a-c62cf68063ae
+                    agree.response.messageID = makeid(8) + "-" + makeid(4) + "-" + makeid(4) + "-" + makeid(4) + "-" + makeid(11);//9913082f-0891-40be-8b8a-c62cf68063ae
                     agree.response.performative = "AGREE";
-                    agree.response.recipient = "phy";
-                    rxnotif.time = sender.time + 12;
-                    rxnotif.component = "phy::org.arl.unet.sim.HalfDuplexModem/" + receive.component.substr(receive.component.length - 1);
-                    rxnotif.threadID = inform.response.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe;
-                    rxnotif.stimulus.clazz = "org.arl.unet.sim.HalfDuplexModem$TX";
-                    rxnotif.stimulus.messageID = inform.response.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe
-                    rxnotif.stimulus.performative = "INFORM";
-                    rxnotif.stimulus.sender = "phy";
-                    rxnotif.stimulus.recipient = "phy";
-                    rxnotif.response.clazz = "org.arl.unet.phy.RxFrameNtf";
-                    rxnotif.response.messageID = receive.threadID;//12995b36-b42d-4277-bd2d-9936ee4a2d29
-                    rxnotif.response.performative = "INFORM";
-                    rxnotif.response.sender = "phy";
-                    rxnotif.response.recipient = "#phy__ntf";
+                    agree.response.recipient = splitComponents(sender.component)[0];
                     txnotif.time = sender.time + 9;
                     txnotif.component = "phy::org.arl.unet.sim.HalfDuplexModem/" + sender.component.substr(sender.component.length - 1);
                     txnotif.threadID = sender.response.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe;
@@ -428,7 +415,20 @@ export function half(combinedFilePath: string) {
                     txnotif.response.messageID = makeid(8) + "-" + makeid(4) + "-" + makeid(4) + "-" + makeid(4) + "-" + makeid(11);//c26d1081-48fd-4afe-af0d-426e5e6c7d21
                     txnotif.response.performative = "INFORM";
                     txnotif.response.sender = "phy";
-                    txnotif.response.recipient = sender.stimulus.recipient;
+                    txnotif.response.recipient = splitComponents(sender.component)[0];
+                    rxnotif.time = sender.time + 12;
+                    rxnotif.component = "phy::org.arl.unet.sim.HalfDuplexModem/" + receive.component.substr(receive.component.length - 1);
+                    rxnotif.threadID = txnotif.stimulus.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe;
+                    rxnotif.stimulus.clazz = "org.arl.unet.sim.HalfDuplexModem$TX";
+                    rxnotif.stimulus.messageID = txnotif.stimulus.messageID;//9679e2db-fa63-4e98-93eb-5b13554aaffe
+                    rxnotif.stimulus.performative = "INFORM";
+                    rxnotif.stimulus.sender = "phy";
+                    rxnotif.stimulus.recipient = "phy";
+                    rxnotif.response.clazz = "org.arl.unet.phy.RxFrameNtf";
+                    rxnotif.response.messageID = receive.stimulus.messageID;//12995b36-b42d-4277-bd2d-9936ee4a2d29
+                    rxnotif.response.performative = "INFORM";
+                    rxnotif.response.sender = "phy";
+                    rxnotif.response.recipient = "#phy__ntf";
                     evcopy.push(inform, agree, txnotif, rxnotif);
                     break;
                 }
@@ -437,4 +437,5 @@ export function half(combinedFilePath: string) {
     }
     obj.events[0].events = evcopy;
     fs.writeFileSync(combinedFilePath, JSON.stringify(obj, null, 4));
+    console.log(obj);
 }
