@@ -94,8 +94,6 @@ async function initSolve(context: vscode.ExtensionContext) {
 			}
 			else if (message.type === 'selectedSIM') {
 				let txA: any[][];
-				let rxA: any[][];
-				let txB: any[][];
 				let rxB: any[][];
 				let exists = fs.existsSync(path.join(ws, "aligned"));
 				if (exists === false) {
