@@ -1,8 +1,7 @@
-import React, { ChangeEvent, useState, useRef, useReducer} from "react";
+import React, { ChangeEvent, useState } from "react";
 import styled from "styled-components";
-import { parse } from "url";
 import styles from "./mystyle.module.css";
-import { Message, CommonMessage } from '../ext-src/messages/messageTypes';
+import { Message } from '../ext-src/messages/messageTypes';
 
 const blue = "#007acc";
 const red = "#D16969";
@@ -93,7 +92,7 @@ function Solve() {
                 file1: (fileList[0] as FileWithPath).path,
                 file2: (fileList[1] as FileWithPath).path
             }
-            vscode.postMessage<CommonMessage>({
+            vscode.postMessage<Message>({
                 type: 'settings',
                 payload: settings,
             });
@@ -303,7 +302,3 @@ function Solve() {
 }
 
 export default Solve;
-
-function acquireVsCodeApi() {
-    throw new Error("Function not implemented.");
-}

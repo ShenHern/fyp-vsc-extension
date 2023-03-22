@@ -5,16 +5,15 @@ import Solve from "./Solve";
 
 const App: React.FC = () => {
 
-  const [jsonData, setJsonData] = useState<any>();
+  const [simArray, setSimArray] = useState<any>();
   const [viewwindow, OpenViewWindow] = useState<boolean>();
   const [solveWindow, OpenSolveWindow] = useState<boolean>();
 
   window.addEventListener("message", (event) => {
     switch(event.data.command) {
       case 'view': {
-        const newJsonData = event.data.json;
-        const json = JSON.parse(newJsonData);
-        setJsonData(json)
+        const arr = event.data.payload;
+        setSimArray(arr)
         OpenViewWindow(true);
         OpenSolveWindow(false);
         break;
@@ -31,7 +30,7 @@ const App: React.FC = () => {
     <div>
     {
       (viewwindow) && <RenderGraph
-      {...jsonData}/>
+      {...simArray}/>
     }
     {
       (solveWindow) &&

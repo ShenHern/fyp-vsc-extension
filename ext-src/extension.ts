@@ -3,11 +3,12 @@
 /* eslint-disable prefer-const */
 import * as vscode from "vscode";
 import * as path from "path";
-import { extractNode, copyGroup, noDupes, extractTxToDataframe, extractRxToDataframe, align, merge, half, assocRxTx } from "./extFunctions";
 import * as fs from "fs";
+import * as JSONStream from 'jsonstream';
+import { extractNode, copyGroup, noDupes, extractTxToDataframe, extractRxToDataframe, align, merge, half, assocRxTx } from "./extAlignFunctions";
+import { analyse } from "./extVisualFunctions";
 import { Problem } from './extTypes';
 import { Message } from './messages/messageTypes';
-import * as JSONStream from 'jsonstream';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -80,9 +81,7 @@ async function initSolve(context: vscode.ExtensionContext) {
 			const file_listA = await streamToSimArray(parser);
 			streamB.pipe(parser2);
 			const file_listB = await streamToSimArray(parser2);
-			// var parser = JSONStream.parse('events.*');
 
-			// file_listB = await streamToSimArray(parser);
 			const send = {
 				fileA: file_listA,
 				fileB: file_listB
@@ -116,7 +115,6 @@ async function initSolve(context: vscode.ExtensionContext) {
 
 				let sender = extractNode(dataA as Array<{ [header: string]: any }>);
 				copyGroup(dataA as Array<{ [header: string]: any }>, ws, path.parse(filePath1).base, simA);
-				// let receiver = extractNode()
 
 				let receiver = extractNode(dataB as Array<{ [header: string]: any }>);
 				txA = noDupes(extractTxToDataframe(receiver, dataA));
@@ -221,105 +219,156 @@ async function initSolve(context: vscode.ExtensionContext) {
 }
 
 async function initReactApp(context: vscode.ExtensionContext) {
-  let currentTextEditor: vscode.TextEditor | undefined =
+	let currentTextEditor: vscode.TextEditor | undefined =
     vscode.window.visibleTextEditors[0];
+	
+	const panel = vscode.window.createWebviewPanel(
+		"liveHTMLPreviewer",
+		"Unet: Trace Visualisation",
+		2,
+		{
+			enableScripts: true,
+			retainContextWhenHidden: true,
+			localResourceRoots: [
+				vscode.Uri.file(path.join(context.extensionPath, "build")),
+				vscode.Uri.file(path.join(context.extensionPath, "assets")),
+			],
+		}
+	);
+	
+	let file = currentTextEditor.document.fileName;
+	var stream = fs.createReadStream(file, { encoding: 'utf8' });
+	var parser = JSONStream.parse('events.*');
+	stream.pipe(parser);
+	const simArray = await streamToSimArray(parser);
+	console.log(simArray);
 
-  const panel = vscode.window.createWebviewPanel(
-    "liveHTMLPreviewer",
-    "Unet: Trace Visualisation",
-    2,
-    {
-      enableScripts: true,
-      retainContextWhenHidden: true,
-      localResourceRoots: [
-        vscode.Uri.file(path.join(context.extensionPath, "build")),
-        vscode.Uri.file(path.join(context.extensionPath, "assets")),
-      ],
-    }
-  );
-
-  panel.webview.postMessage({
-	command: 'view',
-    json: currentTextEditor.document.getText(),
-  });
-
-  const onActiveEditorChange = vscode.window.onDidChangeActiveTextEditor(
-    (editor) => {
-      currentTextEditor = editor;
-    }
-  );
-
-  const onTextChange = vscode.workspace.onDidChangeTextDocument(
-    (changeEvent) => {
-      panel.webview.postMessage({
+	panel.webview.postMessage({
 		command: 'view',
-        json: changeEvent.document.getText(),
-      });
-    }
-  );
+		payload: simArray,
+	});
+	
+	const onActiveEditorChange = vscode.window.onDidChangeActiveTextEditor(
+		(editor) => {
+			currentTextEditor = editor;
+		}
+	);
+	
+	const onTextChange = vscode.workspace.onDidChangeTextDocument(
+		async (changeEvent) => {
+			const file = changeEvent.document.fileName;
+			var stream = fs.createReadStream(file, { encoding: 'utf8' });
+			var parser = JSONStream.parse('events.*');
+			stream.pipe(parser);
+			const simArray = await streamToSimArray(parser);
+			panel.webview.postMessage({
+				command: 'view',
+				payload: simArray,
+			});
+		}
+	);
 
-  panel.onDidDispose(
-    () => {
-      onTextChange.dispose();
-      onActiveEditorChange.dispose();
-    },
-    null,
-    context.subscriptions
-  );
+	panel.webview.onDidReceiveMessage(
+		async (message: Message) => {
+			if (message.type === 'selectedSIM') {
+				const sim = message.payload
+				var stream = fs.createReadStream(file, { encoding: 'utf8' });
+				var parser = JSONStream.parse('events.*');
+				stream.pipe(parser);
+				const data = await streamToDataArray(parser, sim);
+				const traceArray = analyse(data as Array<{ [header: string]: any }>);
 
-  const manifest = require(path.join(
-    context.extensionPath,
-    "build",
-    "asset-manifest.json"
-  ));
+				panel.webview.postMessage({
+					command: "traceArray",
+					payload: traceArray
+				})
+			}
+		},
+		undefined,
+		context.subscriptions
+	);
 
-  const mainScript = manifest.files["main.js"];
-  const mainStyle = manifest.files["main.css"];
+	function streamToSimArray (stream : any) {
+		const chunks : any = [];
+		return new Promise((resolve) => {
+			stream.on('data', (chunk : any) => {
+				chunks.push(chunk.group)
+			});
+			stream.on('end', () => resolve(chunks));
+		})
+	}
+	
+	function streamToDataArray (stream : any, sim : any) {
+		const chunks : any = [];
+		return new Promise((resolve) => {
+			stream.on('data', (chunk : any) => {
+				if (chunk.group === sim)
+				chunks.push(chunk.events)});
+			stream.on('end', () => resolve(chunks));
+		})
+	}
 
-  const basePathOnDisk = vscode.Uri.file(
-    path.join(context.extensionPath, "build")
-  );
-  const scriptPathOnDisk = vscode.Uri.file(
-    path.join(context.extensionPath, "build", mainScript)
-  );
-  const stylePathOnDisk = vscode.Uri.file(
-    path.join(context.extensionPath, "build", mainStyle)
-  );
+	panel.onDidDispose(() => {
+		onTextChange.dispose();
+		onActiveEditorChange.dispose();
+	},
+	null,
+	context.subscriptions
+	);
+	
+	const manifest = require(path.join(
+		context.extensionPath,
+		"build",
+		"asset-manifest.json"
+	));
 
-  // const styleUri = stylePathOnDisk.with({ scheme: "vscode-resource" });
+	const mainScript = manifest.files["main.js"];
+	const mainStyle = manifest.files["main.css"];
+	
+	const basePathOnDisk = vscode.Uri.file(
+		path.join(context.extensionPath, "build")
+	);
+	
+	const scriptPathOnDisk = vscode.Uri.file(
+		path.join(context.extensionPath, "build", mainScript)
+	);
+	
+	const stylePathOnDisk = vscode.Uri.file(
+		path.join(context.extensionPath, "build", mainStyle)
+	);
+	
+	const stylesMainUri = panel.webview.asWebviewUri(stylePathOnDisk);
+	const scriptUri = panel.webview.asWebviewUri(scriptPathOnDisk);
 
-  //const baseUri = panel.webview.asWebviewUri(basePathOnDisk);
-  const stylesMainUri = panel.webview.asWebviewUri(stylePathOnDisk);
-  const scriptUri = panel.webview.asWebviewUri(scriptPathOnDisk);
+	const nonce = getNonce();
 
-  const nonce = getNonce();
-
-  panel.webview.html = `<!DOCTYPE html>
-  <html lang="en">
-  <head>
+	panel.webview.html = `<!DOCTYPE html>
+	<html lang="en">
+  	<head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'unsafe-inline' 'unsafe-eval' vscode-resource: data: https: http:;">
 
     <link href="${stylesMainUri}" rel="stylesheet">
-  </head>
-  <body>
+	</head>
+	<body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+	<script>
+		const vscode = acquireVsCodeApi();
+	</script>
     <script nonce="${nonce}" src="${scriptUri}"></script>
-  </body>
-  </html>`;
+	</body>
+	</html>`;
 }
 
-// this method is called when your extension is deactivated
-// eslint-disable-next-line @typescript-eslint/no-empty-function
 export function deactivate() {}
 
 function getNonce() {
-  let text = "";
-  const possible =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
+	let text = "";
+	const possible =
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	for (let i = 0; i < 32; i++) {
+		text += possible.charAt(Math.floor(Math.random() * possible.length));
+	}
+	return text;
 }

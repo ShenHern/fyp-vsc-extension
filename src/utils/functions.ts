@@ -99,41 +99,6 @@ function prettyMessage(msg: { [header: string]: string; }) {
     return `${clazz} [[${sender} -> ${recipient}]]`;
 }
 
-
-/**
- * Public function to analyse a group of events from a session and groups them into different traces. Credit: https://github.com/org-arl/unet-contrib/blob/master/tools/viztrace/viztrace.jl
- * @param events group of events from a session
- * @returns list of tuples of size equal to number of traces e.g. [(time, desc, traceOfEvents), ...]
- */
-export function analyse(events: Array<{ [header: string]: any }>) {
-    let traces: Array<[number, string, Array<{ [header: string]: any }>]> = [];
-    let cache: { [id: string]: number; } = {};
-    for (let i = 0; i < events.length; i++) {
-        let eventRow = events[i];
-        let traceID = findTrace(cache, eventRow);
-        if (traceID === undefined) {
-            let compArray = splitComponents(eventRow["component"]);
-            let cname = compArray[0];
-            let cnode = compArray[2];
-            if (cnode !== "") {
-                cnode = `[${cnode}]`;
-            }
-            let desc = cnode + " " + cname;
-            if ("stimulus" in eventRow) {
-                desc = cnode + " " + prettyMessage(eventRow["stimulus"]);
-            } else if ("response" in eventRow) {
-                desc = cnode + " " + prettyMessage(eventRow["response"]);
-            }
-            traces.push([eventRow["time"], desc, [eventRow]]);
-            traceID = traces.length - 1;
-        } else {
-            traces[traceID][2].push(eventRow);
-        }
-        addToCache(cache, eventRow, traceID);
-    }
-    return traces;
-}
-
 /**
  * A function that decides whether to capture a given message or to ignore it. Also stores the filtered actors and messages in the arrays provided in arguments.
  * @param actors an array of actors (agents)

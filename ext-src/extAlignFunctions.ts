@@ -50,7 +50,6 @@ export function extractTxToDataframe(receiver: string, events: any) {
         //for each event; where event is {time, component, stimulus, response}
         if ("response" in event) {
             let response = event["response"];
-            // TODO: response.receiver === receiver
             if (response.clazz === "org.arl.unet.phy.TxFrameReq") {
                 //extract out the ID and timing
                 let txID = response.messageID;
@@ -75,7 +74,6 @@ export function extractRxToDataframe(sender: string, events: any) {
         //for each event; where event is {time, component, stimulus, response}
         if ("stimulus" in event) {
             let stimulus = event["stimulus"];
-            // TODO: stimulus.sender === sender
             if (stimulus.clazz === "org.arl.unet.phy.RxFrameNtf") {
                 //extract out the ID and timing
                 let rxID = stimulus.messageID;
