@@ -311,7 +311,7 @@ export function activate(context: vscode.ExtensionContext) {
 						let traceQuickPickIndex = 1;
 						for (let trace of traces) {
 							//create string array to display quick pick of traces
-							traceStringArray.push(`${traceQuickPickIndex}.\tTime: ${trace[0]}\t${trace[1]}`);
+							traceStringArray.push(`${traceQuickPickIndex}.\tTime: ${trace[0]}\t${trace[1]}\t(${trace[2].length} events)`);
 							traceQuickPickIndex++;
 						}
 
